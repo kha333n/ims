@@ -1,5 +1,14 @@
 <div>
     <div class="max-w-5xl mx-auto">
+        @if ($actionSummary)
+            <div class="mb-4 bg-white rounded-lg shadow border-l-4 {{ $actionSummary['action'] === 'Deleted' ? 'border-red-500' : 'border-green-500' }} px-6 py-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium {{ $actionSummary['action'] === 'Deleted' ? 'text-red-700' : 'text-green-700' }}">Sale Man {{ $actionSummary['action'] }}: {{ $actionSummary['name'] }} ({{ $actionSummary['commission'] }}%)</span>
+                    <button wire:click="$set('actionSummary', null)" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+            </div>
+        @endif
+
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-bold text-navy-800">Sale Men</h1>
             <div class="flex items-center gap-3">

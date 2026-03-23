@@ -28,6 +28,9 @@ class InstallmentUpdate extends Component
 
     public ?string $customer_mobile = null;
 
+    // Summary
+    public ?array $updateSummary = null;
+
     // New plan
     public string $new_type = '';
 
@@ -105,6 +108,8 @@ class InstallmentUpdate extends Component
         $this->validate($rules);
 
         $account = Account::findOrFail($this->account_id);
+        $oldType = $account->installment_type;
+        $oldAmount = $account->installment_amount;
 
         $dayValue = $this->new_type === 'daily' ? null : $this->new_day;
 
@@ -129,7 +134,14 @@ class InstallmentUpdate extends Component
         $this->current_day = $dayValue;
         $this->current_amount = parseMoney($this->new_amount);
 
-        session()->flash('success', 'Installment plan updated successfully.');
+        $this->updateSummary = [
+            'account_id' => $account->id,
+            'old_type' => ucfirst($oldType),
+            'old_amount' => $oldAmount,
+            'new_type' => ucfirst($this->new_type),
+            'new_amount' => parseMoney($this->new_amount),
+            'remaining' => $this->remaining_amount,
+        ];
     }
 
     public function render()
@@ -143,9 +155,12 @@ class InstallmentUpdate extends Component
                 ->get();
         }
 
+        $custOpts = $customers->map(fn ($c) => ['id' => $c->id, 'label' => $c->name]);
+        $accOpts = $accounts->map(fn ($a) => ['id' => $a->id, 'label' => "Acc# {$a->id} — ".formatMoney($a->remaining_amount).' remaining']);
+
         return view('livewire.customers.installment-update', [
-            'customers' => $customers,
-            'accounts' => $accounts,
+            'custOpts' => $custOpts,
+            'accOpts' => $accOpts,
         ]);
     }
 }

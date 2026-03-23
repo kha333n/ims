@@ -31,8 +31,8 @@ class ProductListTest extends TestCase
     public function test_product_list_shows_products(): void
     {
         $supplier = Supplier::create(['name' => 'Test Supplier']);
-        Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10, 'supplier_id' => $supplier->id]);
-        Product::create(['name' => 'AC DC Fan', 'price' => 1500000, 'quantity' => 25]);
+        Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10, 'supplier_id' => $supplier->id]);
+        Product::create(['name' => 'AC DC Fan', 'sale_price' => 1500000, 'quantity' => 25]);
 
         Livewire::test(ProductList::class)
             ->assertSee('LED TV')
@@ -48,8 +48,8 @@ class ProductListTest extends TestCase
 
     public function test_product_list_search_filters_by_name(): void
     {
-        Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
-        Product::create(['name' => 'AC DC Fan', 'price' => 1500000, 'quantity' => 25]);
+        Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
+        Product::create(['name' => 'AC DC Fan', 'sale_price' => 1500000, 'quantity' => 25]);
 
         Livewire::test(ProductList::class)
             ->set('search', 'LED')
@@ -59,7 +59,7 @@ class ProductListTest extends TestCase
 
     public function test_product_list_search_shows_no_results_message(): void
     {
-        Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(ProductList::class)
             ->set('search', 'NonExistent')
@@ -68,7 +68,7 @@ class ProductListTest extends TestCase
 
     public function test_product_list_displays_formatted_price(): void
     {
-        Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(ProductList::class)
             ->assertSee('PKR 50,000');
@@ -77,7 +77,7 @@ class ProductListTest extends TestCase
     public function test_product_list_paginates_at_50(): void
     {
         for ($i = 1; $i <= 55; $i++) {
-            Product::create(['name' => "Product $i", 'price' => 100000, 'quantity' => 1]);
+            Product::create(['name' => "Product $i", 'sale_price' => 100000, 'quantity' => 1]);
         }
 
         Livewire::test(ProductList::class)
@@ -101,14 +101,15 @@ class ProductListTest extends TestCase
         Livewire::test(ProductList::class)
             ->call('openAddModal')
             ->set('name', 'New Product')
-            ->set('price', '15000')
+            ->set('sale_price', '15000')
+            ->set('purchase_price', '12000')
             ->set('quantity', 5)
             ->call('save')
             ->assertSet('showModal', false);
 
         $this->assertDatabaseHas('products', [
             'name' => 'New Product',
-            'price' => 1500000,
+            'sale_price' => 1500000,
             'quantity' => 5,
         ]);
     }
@@ -120,7 +121,8 @@ class ProductListTest extends TestCase
         Livewire::test(ProductList::class)
             ->call('openAddModal')
             ->set('name', 'Full Product')
-            ->set('price', '25000')
+            ->set('sale_price', '25000')
+            ->set('purchase_price', '20000')
             ->set('quantity', 10)
             ->set('supplier_id', $supplier->id)
             ->set('brand', 'Samsung')
@@ -133,7 +135,7 @@ class ProductListTest extends TestCase
 
         $this->assertDatabaseHas('products', [
             'name' => 'Full Product',
-            'price' => 2500000,
+            'sale_price' => 2500000,
             'supplier_id' => $supplier->id,
             'brand' => 'Samsung',
             'model_number' => 'SM-100',
@@ -148,9 +150,9 @@ class ProductListTest extends TestCase
         Livewire::test(ProductList::class)
             ->call('openAddModal')
             ->set('name', '')
-            ->set('price', '')
+            ->set('sale_price', '')
             ->call('save')
-            ->assertHasErrors(['name', 'price']);
+            ->assertHasErrors(['name', 'sale_price']);
     }
 
     public function test_create_product_validates_price_is_numeric(): void
@@ -158,10 +160,10 @@ class ProductListTest extends TestCase
         Livewire::test(ProductList::class)
             ->call('openAddModal')
             ->set('name', 'Test')
-            ->set('price', 'abc')
+            ->set('sale_price', 'abc')
             ->set('quantity', 1)
             ->call('save')
-            ->assertHasErrors(['price']);
+            ->assertHasErrors(['sale_price']);
     }
 
     public function test_can_create_product_with_image(): void
@@ -171,7 +173,8 @@ class ProductListTest extends TestCase
         Livewire::test(ProductList::class)
             ->call('openAddModal')
             ->set('name', 'Product With Image')
-            ->set('price', '5000')
+            ->set('sale_price', '5000')
+            ->set('purchase_price', '4000')
             ->set('quantity', 1)
             ->set('image', UploadedFile::fake()->image('product.jpg', 200, 200))
             ->call('save')
@@ -186,14 +189,14 @@ class ProductListTest extends TestCase
 
     public function test_edit_modal_opens_with_product_data(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10, 'brand' => 'LG']);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10, 'brand' => 'LG']);
 
         Livewire::test(ProductList::class)
             ->call('openEditModal', $product->id)
             ->assertSet('showModal', true)
             ->assertSet('editingProductId', $product->id)
             ->assertSet('name', 'LED TV')
-            ->assertSet('price', '50000')
+            ->assertSet('sale_price', '50000')
             ->assertSet('quantity', 10)
             ->assertSet('brand', 'LG')
             ->assertSee('Edit Product');
@@ -201,12 +204,13 @@ class ProductListTest extends TestCase
 
     public function test_can_update_product(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(ProductList::class)
             ->call('openEditModal', $product->id)
             ->set('name', 'Updated LED TV')
-            ->set('price', '60000')
+            ->set('sale_price', '60000')
+            ->set('purchase_price', '50000')
             ->set('quantity', 15)
             ->call('save')
             ->assertSet('showModal', false);
@@ -214,7 +218,7 @@ class ProductListTest extends TestCase
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
             'name' => 'Updated LED TV',
-            'price' => 6000000,
+            'sale_price' => 6000000,
             'quantity' => 15,
         ]);
     }
@@ -233,7 +237,7 @@ class ProductListTest extends TestCase
 
     public function test_can_soft_delete_product(): void
     {
-        $product = Product::create(['name' => 'To Delete', 'price' => 100000, 'quantity' => 5]);
+        $product = Product::create(['name' => 'To Delete', 'sale_price' => 100000, 'quantity' => 5]);
 
         Livewire::test(ProductList::class)
             ->call('confirmDelete', $product->id)
@@ -246,7 +250,7 @@ class ProductListTest extends TestCase
 
     public function test_cannot_delete_product_with_active_account_items(): void
     {
-        $product = Product::create(['name' => 'Active Item', 'price' => 100000, 'quantity' => 5]);
+        $product = Product::create(['name' => 'Active Item', 'sale_price' => 100000, 'quantity' => 5]);
         $customer = Customer::create(['name' => 'Test Customer']);
         $account = Account::create([
             'customer_id' => $customer->id,
@@ -274,7 +278,7 @@ class ProductListTest extends TestCase
 
     public function test_can_delete_product_with_closed_account_items(): void
     {
-        $product = Product::create(['name' => 'Closed Item', 'price' => 100000, 'quantity' => 5]);
+        $product = Product::create(['name' => 'Closed Item', 'sale_price' => 100000, 'quantity' => 5]);
         $customer = Customer::create(['name' => 'Test Customer']);
         $account = Account::create([
             'customer_id' => $customer->id,
@@ -301,7 +305,7 @@ class ProductListTest extends TestCase
 
     public function test_cancel_delete_resets_state(): void
     {
-        $product = Product::create(['name' => 'Test', 'price' => 100000, 'quantity' => 1]);
+        $product = Product::create(['name' => 'Test', 'sale_price' => 100000, 'quantity' => 1]);
 
         Livewire::test(ProductList::class)
             ->call('confirmDelete', $product->id)

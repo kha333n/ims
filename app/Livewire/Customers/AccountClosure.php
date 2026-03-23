@@ -24,6 +24,9 @@ class AccountClosure extends Component
 
     public string $discount_slip = '';
 
+    // Summary
+    public ?array $actionSummary = null;
+
     // Display
     public ?array $accountInfo = null;
 
@@ -82,8 +85,18 @@ class AccountClosure extends Component
             'discount_slip' => $this->discount_slip ?: null,
         ]);
 
+        $custName = $this->accountInfo['name'] ?? '';
+        $accId = $this->account_id;
+
+        $this->actionSummary = [
+            'action' => 'Closed',
+            'account_id' => $accId,
+            'customer' => $custName,
+            'discount' => $discount,
+            'remaining' => max(0, $account->remaining_amount),
+        ];
+
         $this->reset(['account_id', 'accountInfo', 'discount_amount', 'discount_slip']);
-        session()->flash('success', 'Account closed successfully.');
     }
 
     public function activateAccount(): void
@@ -92,14 +105,23 @@ class AccountClosure extends Component
             'account_id' => 'required|exists:accounts,id',
         ]);
 
+        $custName = $this->accountInfo['name'] ?? '';
+        $accId = $this->account_id;
+
         $account = Account::findOrFail($this->account_id);
         $account->update([
             'status' => 'active',
             'closed_at' => null,
         ]);
 
+        $this->actionSummary = [
+            'action' => 'Activated',
+            'account_id' => $accId,
+            'customer' => $custName,
+            'remaining' => $account->remaining_amount,
+        ];
+
         $this->reset(['account_id', 'accountInfo']);
-        session()->flash('success', 'Account activated successfully.');
     }
 
     public function render()
@@ -125,10 +147,14 @@ class AccountClosure extends Component
                 ->get();
         }
 
+        $rmOpts = $recoveryMen->map(fn ($e) => ['id' => $e->id, 'label' => $e->name.($e->area ? " ({$e->area})" : '')]);
+        $custOpts = $customers->map(fn ($c) => ['id' => $c->id, 'label' => $c->name]);
+        $accOpts = $accounts->map(fn ($a) => ['id' => $a->id, 'label' => "Acc# {$a->id} — ".formatMoney($a->remaining_amount).' remaining']);
+
         return view('livewire.customers.account-closure', [
-            'recoveryMen' => $recoveryMen,
-            'customers' => $customers,
-            'accounts' => $accounts,
+            'rmOpts' => $rmOpts,
+            'custOpts' => $custOpts,
+            'accOpts' => $accOpts,
         ]);
     }
 }

@@ -2,36 +2,25 @@
     <div class="max-w-2xl mx-auto">
         <h1 class="text-xl font-bold text-navy-800 mb-4">Installment Plan Update</h1>
 
-        @if (session()->has('success'))
-            <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
-                {{ session('success') }}
+        @if ($updateSummary)
+            <div class="mb-4 bg-white rounded-lg shadow border-l-4 border-green-500 px-6 py-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-bold text-green-700">Plan Updated</h2>
+                    <button wire:click="$set('updateSummary', null)" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <dl class="grid grid-cols-3 gap-2 text-sm">
+                    <div><dt class="text-gray-500 text-xs">Account #</dt><dd class="font-bold">#{{ $updateSummary['account_id'] }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Old Plan</dt><dd>{{ $updateSummary['old_type'] }} — {{ formatMoney($updateSummary['old_amount']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">New Plan</dt><dd class="font-medium">{{ $updateSummary['new_type'] }} — {{ formatMoney($updateSummary['new_amount']) }}</dd></div>
+                </dl>
             </div>
         @endif
 
         <div class="bg-white rounded-lg shadow px-6 py-5 space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                <select wire:model.live="customer_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                    <option value="">— Select Customer —</option>
-                    @foreach ($customers as $cust)
-                        <option value="{{ $cust->id }}">#{{ $cust->id }} — {{ $cust->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-searchable-select wire-model="customer_id" :options="$custOpts" label="Customer" placeholder="Search by ID or name..." />
 
-            @if ($customer_id && $accounts->count() > 0)
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-                    <select wire:model.live="account_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                        <option value="">— Select Account —</option>
-                        @foreach ($accounts as $acc)
-                            <option value="{{ $acc->id }}">Acc# {{ $acc->id }} — {{ formatMoney($acc->remaining_amount) }} remaining</option>
-                        @endforeach
-                    </select>
-                    @error('account_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-            @elseif ($customer_id)
-                <p class="text-sm text-gray-400">No active accounts for this customer.</p>
+            @if ($customer_id)
+                <x-searchable-select wire-model="account_id" :options="$accOpts" label="Account" placeholder="Search account..." />
             @endif
 
             @if ($current_type)
@@ -48,8 +37,6 @@
                 </div>
 
                 <h3 class="text-sm font-bold text-navy-800">New Plan</h3>
-
-                {{-- Type --}}
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Installment Type</label>
                     <select wire:model.live="new_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
@@ -57,23 +44,17 @@
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                     </select>
-                    @error('new_type') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    {{-- Day (conditional) --}}
                     @if ($new_type === 'weekly')
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Day of Week</label>
                             <select wire:model.live="new_day" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
                                 <option value="">— Select —</option>
-                                <option value="1">Monday</option>
-                                <option value="2">Tuesday</option>
-                                <option value="3">Wednesday</option>
-                                <option value="4">Thursday</option>
-                                <option value="5">Friday</option>
-                                <option value="6">Saturday</option>
-                                <option value="7">Sunday</option>
+                                @foreach (['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] as $i => $day)
+                                    <option value="{{ $i + 1 }}">{{ $day }}</option>
+                                @endforeach
                             </select>
                             @error('new_day') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
@@ -87,8 +68,6 @@
                     @else
                         <div></div>
                     @endif
-
-                    {{-- Amount --}}
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">
                             Amount per {{ $new_type === 'daily' ? 'Day' : ($new_type === 'weekly' ? 'Week' : 'Month') }} (PKR)
@@ -98,20 +77,14 @@
                     </div>
                 </div>
 
-                {{-- Calculated completion --}}
                 @if ($this->periodsToComplete !== null)
                     <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-                        <p class="text-sm text-blue-800">
-                            Estimated completion: <strong>{{ $this->periodsToComplete }} {{ $this->periodLabel }}</strong>
-                            to pay off remaining {{ formatMoney($remaining_amount) }}
-                        </p>
+                        <p class="text-sm text-blue-800">Estimated completion: <strong>{{ $this->periodsToComplete }} {{ $this->periodLabel }}</strong> to pay off remaining {{ formatMoney($remaining_amount) }}</p>
                     </div>
                 @endif
 
                 <div class="flex justify-end">
-                    <button wire:click="save" class="px-5 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors">
-                        Update Plan
-                    </button>
+                    <button wire:click="save" class="px-5 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors">Update Plan</button>
                 </div>
             @endif
         </div>

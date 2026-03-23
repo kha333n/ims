@@ -394,6 +394,83 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 
 ---
 
+### TASK-035B: Report — Profit & Loss Report
+
+- Livewire: `Reports\ProfitLossReport`
+- Filters: Date From, Date To
+- Calculates per-sale profit: `account_items.unit_price` (sale) minus `products.purchase_price` (cost) per item sold
+- Shows: Total Sales Revenue, Total Cost of Goods, Gross Profit, Discounts Given, Losses (closures without full payment), Net Profit
+- Loss calculation: for closed accounts where `remaining_amount > 0` at closure (and currently still closed — reopened accounts are NOT losses)
+- Temporary vs permanent loss: if an account was closed then reopened, the closure period is a temporary loss (shown separately if in date range) but not counted as permanent loss
+- Groups by month or date range
+- Print
+- **Deliverable:** `/reports/profit-loss` shows financial health
+
+---
+
+### TASK-035C: Report — Financial Ledger Report
+
+- Livewire: `Reports\FinancialLedgerReport`
+- Filters: Date From, Date To, Event Type (all/sale/payment/return/closure/activation/discount/purchase)
+- Table: Date, Event Type, Account#, Customer, Product, Debit, Credit, Balance, Description
+- Running totals for debits and credits
+- Uses `financial_ledger` table — every money-affecting action logs here
+- Print
+- **Deliverable:** `/reports/financial-ledger` full audit trail
+
+---
+
+### TASK-035D: Report — Supplier Comparison Report
+
+- Livewire: `Reports\SupplierComparisonReport`
+- Filters: Product (optional)
+- Table: Product, Supplier, Last Price, Last Qty, Last Date, Current Best Price
+- Highlights lowest-price supplier per product in green
+- Uses `supplier_products` and `purchases` tables
+- Print
+- **Deliverable:** `/reports/supplier-comparison` shows who offers best price
+
+---
+
+### TASK-035E: Report — Credit & Debit Summary
+
+- Livewire: `Reports\CreditDebitReport`
+- Filters: Date From, Date To, Group By (Day/Week/Month)
+- Shows: Total Credits (money out: purchases, discounts, losses), Total Debits (money in: sales, payments), Net Balance
+- Chart-ready summary (table format for now, chart later if needed)
+- Print
+- **Deliverable:** `/reports/credit-debit` high-level financial summary
+
+---
+
+### TASK-035F: Integrate Financial Ledger Recording
+
+- Add `FinancialLedger::record()` calls to every money-affecting action:
+  - `NewSale::proceed()` → event_type: `sale`, debit = total_amount
+  - `NewSale::proceed()` (advance) → event_type: `payment`, debit = advance_amount
+  - `CustomerDetail::savePayment()` → event_type: `payment`, debit = amount
+  - `ReturnPoint::processReturn()` → event_type: `return`, credit = returning_amount
+  - `AccountClosure::closeAccount()` → event_type: `closure`, credit = remaining (if loss), meta = {discount, was_forced}
+  - `AccountClosure::activateAccount()` → event_type: `activation`, meta = {previous_closure_date}
+  - `PurchasePoint::savePurchase()` → event_type: `purchase`, credit = total_cost
+- Loss tracking: when closing with remaining > 0, record as loss. When reopening, record reversal entry
+- All entries include `balance_after` for the account at that point
+- Tests: verify ledger entries created for each action type
+- **Deliverable:** Full financial audit trail in `financial_ledger` table
+
+---
+
+### TASK-035G: Purchase Point — Supplier Price Suggestions
+
+- On PurchasePoint, when a product is selected:
+  - Show all suppliers who have supplied this product before (from `supplier_products` table)
+  - Highlight the lowest-price supplier in green
+  - When a supplier is selected, show their last price and last quantity for this product
+- On save, update `supplier_products` table with latest price/date/quantity
+- **Deliverable:** Smart supplier selection with price history
+
+---
+
 ## Phase 8: Problems/Defaulter Actions
 
 ### TASK-036: Action Against Problem Screen
@@ -600,21 +677,79 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 
 ---
 
+---
+
+## Phase 13: Dashboard
+
+### TASK-056: Dashboard — Overview Widgets
+
+- Replace current blank dashboard (`/`) with a Livewire component: `Dashboard\Overview`
+- **Top stats row** (card widgets):
+  - Total Active Accounts (count)
+  - Total Receivables (sum of remaining_amount on active accounts)
+  - Today's Collections (sum of payments today)
+  - Total Products in Stock (sum of products.quantity)
+- **Recent Activity** panel:
+  - Last 10 payments received (date, customer, amount, account#)
+  - Last 5 new sales (date, customer, items, total)
+- **Financial Summary** panel:
+  - This month: Total Sales, Total Collections, Total Purchases, Total Returns
+  - Compared to last month (show +/- change)
+- **Defaulters Alert** panel:
+  - Count of accounts overdue > N days (from settings)
+  - Top 5 defaulters by amount
+- **Recovery Performance** panel:
+  - Per Recovery Man: accounts assigned, collected this month, pending
+- **Inventory Alert** panel:
+  - Products with stock ≤ 5 (low stock warning)
+- All data pulled from existing tables — no new schema needed
+- Widgets refresh on page load (not real-time polling needed for desktop)
+- **Deliverable:** `/` shows a comprehensive business overview dashboard
+
+---
+
+### TASK-057: Dashboard — Quick Stats API for Widgets
+
+- Create `App\Services\DashboardService` with methods:
+  - `getActiveAccountStats()` → count, total receivables
+  - `getTodayCollections()` → sum
+  - `getMonthlyComparison()` → this month vs last month (sales, collections, purchases, returns)
+  - `getDefaulterSummary(int $days)` → count, top defaulters
+  - `getRecoveryPerformance()` → per RM stats
+  - `getLowStockProducts(int $threshold = 5)` → products below threshold
+- Service is injected into Dashboard component
+- Tests for each method
+- **Deliverable:** Dashboard data layer with tests
+
+---
+
+### TASK-058: Dashboard — Profit Overview Widget
+
+- Requires TASK-035F (financial ledger integration) to be complete
+- Shows: Gross Profit (sale_price - purchase_price across sold items), Net Profit (after discounts/losses)
+- Period selector: This Week / This Month / This Quarter / This Year
+- Loss indicator: total from forced closures (accounts closed with remaining > 0, currently still closed)
+- **Deliverable:** Profit widget on dashboard with period filtering
+
+---
+
 ## Task Summary by Phase
 
-| Phase          | Tasks   | Focus                              |
-| -------------- | ------- | ---------------------------------- |
-| 1 — Foundation | 001–007 | Setup, models, migrations, helpers |
-| 2 — Inventory  | 008–011 | Products, stock entry              |
-| 3 — HR         | 012–013 | Staff management                   |
-| 4 — Customers  | 014–019 | Customer CRUD, account management  |
-| 5 — Sales      | 020–024 | Sale point, returns                |
-| 6 — Recovery   | 025     | Daily recovery entry               |
-| 7 — Reports    | 026–035 | All 9 reports                      |
-| 8 — Problems   | 036     | Defaulter action tracking          |
-| 9 — Settings   | 037–039 | Config, backup, license            |
-| 10 — Polish    | 040–047 | UX, validation, consistency        |
-| 11 — Tests     | 048–050 | Automated testing                  |
-| 12 — Build     | 051–055 | Production build, migration, QA    |
+| Phase          | Tasks       | Focus                                       |
+| -------------- | ----------- | ------------------------------------------- |
+| 1 — Foundation | 001–007     | Setup, models, migrations, helpers          |
+| 2 — Inventory  | 008–011     | Products, stock entry                       |
+| 3 — HR         | 012–013     | Staff management                            |
+| 4 — Customers  | 014–019     | Customer CRUD, account management           |
+| 5 — Sales      | 020–024     | Sale point, returns                         |
+| 6 — Recovery   | 025         | Daily recovery entry                        |
+| 7 — Reports    | 026–035     | Operational reports (9 reports)              |
+| 7B — Financial | 035B–035G   | Financial reports, ledger, supplier pricing |
+| 8 — Problems   | 036         | Defaulter action tracking                   |
+| 9 — Settings   | 037–039     | Config, backup, license                     |
+| 10 — Polish    | 040–047     | UX, validation, consistency                 |
+| 11 — Tests     | 048–050     | Automated testing                           |
+| 12 — Build     | 051–055     | Production build, migration, QA             |
+| 13 — Dashboard | 056–058     | Overview dashboard with widgets             |
 
-**Total: 55 tasks** | **Estimated effort: 120–160 hours**
+**Total: 65 tasks** (55 original + 7 financial + 3 dashboard)

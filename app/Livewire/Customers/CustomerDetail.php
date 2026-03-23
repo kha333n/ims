@@ -13,6 +13,8 @@ class CustomerDetail extends Component
 {
     public Customer $customer;
 
+    public ?array $actionSummary = null;
+
     // Edit mode
     public bool $editing = false;
 
@@ -87,6 +89,7 @@ class CustomerDetail extends Component
             'shop_address' => $this->shop_address ?: null,
         ]);
 
+        $this->actionSummary = ['action' => 'Customer Updated', 'detail' => $this->name];
         $this->editing = false;
     }
 
@@ -110,7 +113,10 @@ class CustomerDetail extends Component
             'remarks' => $this->payment_remarks ?: null,
         ]);
 
-        $account = $this->customer->accounts()->find($this->payment_account_id);
+        $accId = $this->payment_account_id;
+        $txType = $this->transaction_type;
+
+        $account = $this->customer->accounts()->find($accId);
         $account->decrement('remaining_amount', $amount);
 
         $this->reset(['payment_account_id', 'payment_amount', 'transaction_type', 'payment_remarks']);
@@ -119,7 +125,10 @@ class CustomerDetail extends Component
 
         $this->customer->refresh();
 
-        session()->flash('payment_success', 'Payment recorded successfully.');
+        $this->actionSummary = [
+            'action' => 'Payment Recorded',
+            'detail' => formatMoney($amount)." on Acc# {$accId} ({$txType})",
+        ];
     }
 
     public function render()

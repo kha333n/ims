@@ -14,6 +14,8 @@ class RecoveryManList extends Component
 
     public string $search = '';
 
+    public ?array $actionSummary = null;
+
     public bool $showModal = false;
 
     public ?int $editingId = null;
@@ -86,12 +88,15 @@ class RecoveryManList extends Component
             'salary' => $this->salary,
         ];
 
+        $action = $this->editingId ? 'Updated' : 'Added';
+
         if ($this->editingId) {
             Employee::findOrFail($this->editingId)->update($data);
         } else {
             Employee::create($data);
         }
 
+        $this->actionSummary = ['action' => $action, 'name' => $this->name, 'area' => $this->area ?: '—'];
         $this->showModal = false;
         $this->resetForm();
     }
@@ -124,6 +129,7 @@ class RecoveryManList extends Component
             return;
         }
 
+        $this->actionSummary = ['action' => 'Deleted', 'name' => $employee->name, 'area' => $employee->area ?? '—'];
         $employee->delete();
         $this->confirmingDeleteId = null;
         $this->deleteError = '';

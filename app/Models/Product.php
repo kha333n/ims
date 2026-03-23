@@ -12,14 +12,15 @@ class Product extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'name', 'price', 'quantity', 'supplier_id',
+        'name', 'sale_price', 'purchase_price', 'quantity', 'supplier_id',
         'brand', 'model_number', 'color', 'category', 'image_path', 'notes',
     ];
 
     public function casts(): array
     {
         return [
-            'price' => 'integer',
+            'sale_price' => 'integer',
+            'purchase_price' => 'integer',
             'quantity' => 'integer',
         ];
     }
@@ -39,8 +40,18 @@ class Product extends Model
         return $this->hasMany(Purchase::class);
     }
 
-    public function getFormattedPriceAttribute(): string
+    public function supplierProducts(): HasMany
     {
-        return 'PKR '.number_format($this->price / 100, 0);
+        return $this->hasMany(SupplierProduct::class);
+    }
+
+    public function getFormattedSalePriceAttribute(): string
+    {
+        return formatMoney($this->sale_price);
+    }
+
+    public function getFormattedPurchasePriceAttribute(): string
+    {
+        return formatMoney($this->purchase_price);
     }
 }

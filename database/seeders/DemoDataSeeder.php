@@ -33,7 +33,7 @@ class DemoDataSeeder extends Seeder
             $saleMan = $saleMen->random();
             $recoveryMan = $recoveryMen->random();
             $type = $installmentTypes[array_rand($installmentTypes)];
-            $total = $product->price * rand(1, 2);
+            $total = $product->sale_price * rand(1, 2);
             $advance = (int) ($total * 0.1);
             $remaining = $total - $advance;
             $instAmt = (int) ($remaining / rand(10, 24));
@@ -59,7 +59,7 @@ class DemoDataSeeder extends Seeder
                 'account_id' => $account->id,
                 'product_id' => $product->id,
                 'quantity' => 1,
-                'unit_price' => $product->price,
+                'unit_price' => $product->sale_price,
             ]);
 
             // Advance payment

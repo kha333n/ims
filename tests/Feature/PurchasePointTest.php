@@ -23,7 +23,7 @@ class PurchasePointTest extends TestCase
 
     public function test_shows_product_dropdown(): void
     {
-        Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(PurchasePoint::class)
             ->assertSee('LED TV');
@@ -31,19 +31,19 @@ class PurchasePointTest extends TestCase
 
     public function test_selecting_product_shows_stock_info(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'purchase_price' => 4000000, 'quantity' => 10]);
 
         Livewire::test(PurchasePoint::class)
             ->set('selected_product_id', $product->id)
             ->assertSet('stock_product_name', 'LED TV')
             ->assertSet('stock_current_qty', 10)
             ->assertSet('stock_current_price', 'PKR 50,000')
-            ->assertSet('line_rate', '50000');
+            ->assertSet('line_rate', '40000');
     }
 
     public function test_can_add_item_to_list(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(PurchasePoint::class)
             ->set('selected_product_id', $product->id)
@@ -63,7 +63,7 @@ class PurchasePointTest extends TestCase
 
     public function test_can_remove_item_from_list(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(PurchasePoint::class)
             ->set('selected_product_id', $product->id)
@@ -77,7 +77,7 @@ class PurchasePointTest extends TestCase
 
     public function test_save_purchase_creates_records_and_increments_stock(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
         $supplier = Supplier::create(['name' => 'Test Supplier']);
 
         Livewire::test(PurchasePoint::class)
@@ -109,7 +109,7 @@ class PurchasePointTest extends TestCase
 
     public function test_save_purchase_resets_form(): void
     {
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
 
         Livewire::test(PurchasePoint::class)
             ->set('selected_product_id', $product->id)
@@ -123,8 +123,8 @@ class PurchasePointTest extends TestCase
 
     public function test_total_amount_computed_correctly(): void
     {
-        $p1 = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
-        $p2 = Product::create(['name' => 'Fan', 'price' => 1500000, 'quantity' => 20]);
+        $p1 = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
+        $p2 = Product::create(['name' => 'Fan', 'sale_price' => 1500000, 'quantity' => 20]);
 
         $component = Livewire::test(PurchasePoint::class)
             ->set('selected_product_id', $p1->id)

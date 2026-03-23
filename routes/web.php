@@ -9,8 +9,9 @@ use App\Livewire\Customers\InstallmentUpdate;
 use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
-use App\Livewire\Sales\NewSale;
 use App\Livewire\Inventory\PurchasePoint;
+use App\Livewire\Sales\NewSale;
+use App\Livewire\Sales\ReturnPoint;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('dashboard'))->name('dashboard');
@@ -40,8 +41,8 @@ Route::prefix('customers')->name('customers.')->group(function () {
 
 // Sales
 Route::prefix('sales')->name('sales.')->group(function () {
-    Route::get('/new', fn () => view('placeholder', ['title' => 'New Sale']))->name('new');
-    Route::get('/return', fn () => view('placeholder', ['title' => 'Return Point']))->name('return');
+    Route::get('/new', NewSale::class)->name('new');
+    Route::get('/return', ReturnPoint::class)->name('return');
 });
 
 // Recovery

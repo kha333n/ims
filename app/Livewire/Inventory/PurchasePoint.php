@@ -28,6 +28,9 @@ class PurchasePoint extends Component
 
     public int $line_quantity = 1;
 
+    // Summary
+    public ?array $purchaseSummary = null;
+
     // Stock info
     public ?string $stock_product_name = null;
 
@@ -47,8 +50,8 @@ class PurchasePoint extends Component
             if ($product) {
                 $this->stock_product_name = $product->name;
                 $this->stock_current_qty = $product->quantity;
-                $this->stock_current_price = formatMoney($product->price);
-                $this->line_rate = (string) ($product->price / 100);
+                $this->stock_current_price = formatMoney($product->sale_price);
+                $this->line_rate = (string) ($product->purchase_price / 100);
 
                 return;
             }
@@ -108,12 +111,20 @@ class PurchasePoint extends Component
             }
         });
 
+        $supplierName = $this->supplier_id ? Supplier::find($this->supplier_id)?->name : '—';
+        $itemSummary = collect($this->items)->map(fn ($i) => $i['name'].' x'.$i['quantity'])->join(', ');
+        $total = $this->totalAmount;
+
         $this->reset(['items', 'notes', 'supplier_id', 'selected_product_id', 'line_rate', 'line_quantity']);
         $this->line_quantity = 1;
         $this->purchase_date = now()->format('Y-m-d');
         $this->resetStockInfo();
 
-        session()->flash('success', 'Purchase saved successfully.');
+        $this->purchaseSummary = [
+            'supplier' => $supplierName,
+            'items' => $itemSummary,
+            'total' => $total,
+        ];
     }
 
     public function getTotalAmountProperty(): int
@@ -130,9 +141,12 @@ class PurchasePoint extends Component
 
     public function render()
     {
+        $productOpts = Product::orderBy('name')->get()->map(fn ($p) => ['id' => $p->id, 'label' => $p->name]);
+        $supplierOpts = Supplier::orderBy('name')->get()->map(fn ($s) => ['id' => $s->id, 'label' => $s->name]);
+
         return view('livewire.inventory.purchase-point', [
-            'products' => Product::orderBy('name')->get(),
-            'suppliers' => Supplier::orderBy('name')->get(),
+            'productOpts' => $productOpts,
+            'supplierOpts' => $supplierOpts,
         ]);
     }
 }

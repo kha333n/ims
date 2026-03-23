@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\Customers\AddCustomer;
-use App\Models\Customer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -59,11 +58,16 @@ class AddCustomerTest extends TestCase
             ->assertHasErrors(['name']);
     }
 
-    public function test_redirects_to_customer_detail_after_save(): void
+    public function test_shows_summary_and_resets_form_after_save(): void
     {
         Livewire::test(AddCustomer::class)
             ->set('name', 'Ahmad Khan')
+            ->set('mobile', '0300-111')
             ->call('save')
-            ->assertRedirect(route('customers.show', Customer::first()->id));
+            ->assertSet('savedSummary.name', 'Ahmad Khan')
+            ->assertSet('name', '')
+            ->assertSee('Customer Saved');
+
+        $this->assertDatabaseHas('customers', ['name' => 'Ahmad Khan']);
     }
 }

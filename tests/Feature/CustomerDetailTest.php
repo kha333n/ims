@@ -20,7 +20,7 @@ class CustomerDetailTest extends TestCase
     {
         $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-1111111']);
         $rm = Employee::create(['name' => 'Hassan RM', 'type' => 'recovery_man']);
-        $product = Product::create(['name' => 'LED TV', 'price' => 5000000, 'quantity' => 10]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 10]);
         $account = Account::create([
             'customer_id' => $customer->id,
             'recovery_man_id' => $rm->id,

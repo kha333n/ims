@@ -60,6 +60,9 @@ class NewSale extends Component
 
     public ?int $recovery_man_id = null;
 
+    // Summary after save
+    public ?array $summary = null;
+
     public function mount(): void
     {
         $this->sale_date = now()->format('Y-m-d');
@@ -88,7 +91,7 @@ class NewSale extends Component
         if ($this->selected_product_id) {
             $product = Product::find($this->selected_product_id);
             if ($product) {
-                $this->item_price = (string) ($product->price / 100);
+                $this->item_price = (string) ($product->sale_price / 100);
                 $this->item_quantity = 1;
 
                 return;
@@ -162,6 +165,11 @@ class NewSale extends Component
         };
     }
 
+    public function dismissSummary(): void
+    {
+        $this->summary = null;
+    }
+
     public function proceed(): void
     {
         $rules = [
@@ -191,7 +199,13 @@ class NewSale extends Component
         $installmentAmount = parseMoney($this->installment_amount);
         $dayValue = $this->installment_type === 'daily' ? null : $this->installment_day;
 
-        DB::transaction(function () use ($totalAmount, $advanceAmount, $discountAmount, $remainingAmount, $installmentAmount, $dayValue) {
+        $customerName = $this->customer_name;
+        $itemNames = collect($this->items)->pluck('name')->join(', ');
+        $smName = Employee::find($this->sale_man_id)?->name;
+        $rmName = Employee::find($this->recovery_man_id)?->name;
+        $accountId = null;
+
+        DB::transaction(function () use ($totalAmount, $advanceAmount, $discountAmount, $remainingAmount, $installmentAmount, $dayValue, &$accountId) {
             $account = Account::create([
                 'customer_id' => $this->customer_id,
                 'sale_man_id' => $this->sale_man_id,
@@ -207,6 +221,8 @@ class NewSale extends Component
                 'installment_amount' => $installmentAmount,
                 'status' => 'active',
             ]);
+
+            $accountId = $account->id;
 
             foreach ($this->items as $item) {
                 AccountItem::create([
@@ -232,8 +248,21 @@ class NewSale extends Component
             }
         });
 
+        $this->summary = [
+            'account_id' => $accountId,
+            'customer' => $customerName,
+            'items' => $itemNames,
+            'total' => $totalAmount,
+            'advance' => $advanceAmount,
+            'discount' => $discountAmount,
+            'remaining' => $remainingAmount,
+            'installment_type' => ucfirst($this->installment_type),
+            'installment_amount' => $installmentAmount,
+            'sale_man' => $smName,
+            'recovery_man' => $rmName,
+        ];
+
         $this->resetForm();
-        session()->flash('success', 'Sale completed successfully.');
     }
 
     private function resetCustomerInfo(): void
@@ -264,11 +293,16 @@ class NewSale extends Component
 
     public function render()
     {
+        $customerOpts = Customer::orderBy('name')->get()->map(fn ($c) => ['id' => $c->id, 'label' => $c->name]);
+        $productOpts = Product::where('quantity', '>', 0)->orderBy('name')->get()->map(fn ($p) => ['id' => $p->id, 'label' => "{$p->name} ({$p->quantity} in stock)"]);
+        $smOpts = Employee::saleMen()->orderBy('name')->get()->map(fn ($e) => ['id' => $e->id, 'label' => $e->name]);
+        $rmOpts = Employee::recoveryMen()->orderBy('name')->get()->map(fn ($e) => ['id' => $e->id, 'label' => $e->name.($e->area ? " ({$e->area})" : '')]);
+
         return view('livewire.sales.new-sale', [
-            'customers' => Customer::orderBy('name')->get(),
-            'products' => Product::where('quantity', '>', 0)->orderBy('name')->get(),
-            'saleMen' => Employee::saleMen()->orderBy('name')->get(),
-            'recoveryMen' => Employee::recoveryMen()->orderBy('name')->get(),
+            'customerOpts' => $customerOpts,
+            'productOpts' => $productOpts,
+            'smOpts' => $smOpts,
+            'rmOpts' => $rmOpts,
         ]);
     }
 }

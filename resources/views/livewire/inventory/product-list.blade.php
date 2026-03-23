@@ -1,5 +1,20 @@
 <div>
     <div class="max-w-6xl mx-auto">
+        @if ($actionSummary)
+            <div class="mb-4 bg-white rounded-lg shadow border-l-4 {{ $actionSummary['action'] === 'Deleted' ? 'border-red-500' : 'border-green-500' }} px-6 py-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-bold {{ $actionSummary['action'] === 'Deleted' ? 'text-red-700' : 'text-green-700' }}">Product {{ $actionSummary['action'] }}</h2>
+                    <button wire:click="$set('actionSummary', null)" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <dl class="grid grid-cols-3 gap-2 text-sm">
+                    <div><dt class="text-gray-500 text-xs">Name</dt><dd class="font-medium">{{ $actionSummary['name'] }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Sale Price</dt><dd>{{ formatMoney($actionSummary['sale_price']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Purchase Price</dt><dd>{{ formatMoney($actionSummary['purchase_price']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Quantity</dt><dd>{{ $actionSummary['quantity'] }}</dd></div>
+                </dl>
+            </div>
+        @endif
+
         {{-- Header --}}
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-bold text-navy-800">Product List</h1>
@@ -28,8 +43,9 @@
                     <tr>
                         <th class="px-4 py-2.5 text-left font-medium w-12">Sr#</th>
                         <th class="px-4 py-2.5 text-left font-medium">Name</th>
-                        <th class="px-4 py-2.5 text-right font-medium">Price</th>
-                        <th class="px-4 py-2.5 text-right font-medium">Quantity</th>
+                        <th class="px-4 py-2.5 text-right font-medium">Sale Price</th>
+                        <th class="px-4 py-2.5 text-right font-medium">Purchase Price</th>
+                        <th class="px-4 py-2.5 text-right font-medium">Qty</th>
                         <th class="px-4 py-2.5 text-left font-medium">Supplier</th>
                         <th class="px-4 py-2.5 text-center font-medium w-20">Actions</th>
                     </tr>
@@ -39,7 +55,8 @@
                         <tr class="hover:bg-blue-50 transition-colors" wire:key="product-{{ $product->id }}">
                             <td class="px-4 py-2 text-gray-500">{{ $products->firstItem() + $loop->index }}</td>
                             <td class="px-4 py-2 font-medium text-navy-800">{{ $product->name }}</td>
-                            <td class="px-4 py-2 text-right tabular-nums">@money($product->price)</td>
+                            <td class="px-4 py-2 text-right tabular-nums">@money($product->sale_price)</td>
+                            <td class="px-4 py-2 text-right tabular-nums">@money($product->purchase_price)</td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ number_format($product->quantity) }}</td>
                             <td class="px-4 py-2 text-gray-600">{{ $product->supplier?->name ?? '—' }}</td>
                             <td class="px-4 py-2 text-center space-x-2">
@@ -55,7 +72,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                            <td colspan="7" class="px-4 py-12 text-center text-gray-400">
                                 @if ($search)
                                     No products found matching "{{ $search }}"
                                 @else
@@ -95,13 +112,19 @@
                         @error('name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Price & Quantity --}}
-                    <div class="grid grid-cols-2 gap-4">
+                    {{-- Prices & Quantity --}}
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Price (PKR) <span class="text-red-500">*</span></label>
-                            <input wire:model="price" type="number" step="0.01" min="0"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sale Price (PKR) <span class="text-red-500">*</span></label>
+                            <input wire:model="sale_price" type="number" step="0.01" min="0"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
-                            @error('price') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            @error('sale_price') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Price (PKR) <span class="text-red-500">*</span></label>
+                            <input wire:model="purchase_price" type="number" step="0.01" min="0"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
+                            @error('purchase_price') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>

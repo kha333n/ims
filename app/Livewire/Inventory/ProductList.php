@@ -16,6 +16,9 @@ class ProductList extends Component
 
     public string $search = '';
 
+    // Action summary
+    public ?array $actionSummary = null;
+
     // Modal state
     public bool $showModal = false;
 
@@ -24,7 +27,9 @@ class ProductList extends Component
     // Form fields
     public string $name = '';
 
-    public string $price = '';
+    public string $sale_price = '';
+
+    public string $purchase_price = '';
 
     public int $quantity = 0;
 
@@ -61,7 +66,8 @@ class ProductList extends Component
         $product = Product::findOrFail($id);
         $this->editingProductId = $product->id;
         $this->name = $product->name;
-        $this->price = (string) ($product->price / 100);
+        $this->sale_price = (string) ($product->sale_price / 100);
+        $this->purchase_price = (string) ($product->purchase_price / 100);
         $this->quantity = $product->quantity;
         $this->supplier_id = $product->supplier_id;
         $this->brand = $product->brand ?? '';
@@ -78,7 +84,8 @@ class ProductList extends Component
     {
         $rules = [
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            'sale_price' => 'required|numeric|min:0',
+            'purchase_price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'brand' => 'nullable|string|max:255',
@@ -98,7 +105,8 @@ class ProductList extends Component
 
         $data = [
             'name' => $this->name,
-            'price' => parseMoney($this->price),
+            'sale_price' => parseMoney($this->sale_price),
+            'purchase_price' => parseMoney($this->purchase_price),
             'quantity' => $this->quantity,
             'supplier_id' => $this->supplier_id ?: null,
             'brand' => $this->brand ?: null,
@@ -109,11 +117,21 @@ class ProductList extends Component
             'image_path' => $imagePath,
         ];
 
+        $action = $this->editingProductId ? 'Updated' : 'Added';
+
         if ($this->editingProductId) {
             Product::findOrFail($this->editingProductId)->update($data);
         } else {
             Product::create($data);
         }
+
+        $this->actionSummary = [
+            'action' => $action,
+            'name' => $this->name,
+            'sale_price' => parseMoney($this->sale_price),
+            'purchase_price' => parseMoney($this->purchase_price),
+            'quantity' => $this->quantity,
+        ];
 
         $this->showModal = false;
         $this->resetForm();
@@ -155,6 +173,14 @@ class ProductList extends Component
             return;
         }
 
+        $this->actionSummary = [
+            'action' => 'Deleted',
+            'name' => $product->name,
+            'sale_price' => $product->sale_price,
+            'purchase_price' => $product->purchase_price,
+            'quantity' => $product->quantity,
+        ];
+
         $product->delete();
         $this->confirmingDeleteId = null;
         $this->deleteError = '';
@@ -162,7 +188,7 @@ class ProductList extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['name', 'price', 'quantity', 'supplier_id', 'brand', 'model_number', 'color', 'category', 'notes', 'image', 'existing_image', 'editingProductId']);
+        $this->reset(['name', 'sale_price', 'purchase_price', 'quantity', 'supplier_id', 'brand', 'model_number', 'color', 'category', 'notes', 'image', 'existing_image', 'editingProductId']);
         $this->resetValidation();
     }
 

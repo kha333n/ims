@@ -141,6 +141,23 @@ database/
 
 ---
 
+## UX Conventions
+
+### Action Summaries
+- **Every** save/create/update/delete/close/activate/transfer action MUST show a summary banner above the form after completion
+- Summary appears as a card with a colored left border (green for success, red for delete/close, orange for returns)
+- Summary is dismissible with an × button, stored in a `$actionSummary` (or similar) public property
+- The form below the summary resets and is immediately ready for a new entry — no separate "Save & Add New" button needed
+- Summary should include key details of what was done: IDs, names, amounts, status changes
+
+### Searchable Select Fields
+- All dropdown/select fields that reference another entity (Customer, Product, Employee, Account, Supplier) MUST use the `<x-searchable-select>` component
+- Search filters by **ID** (primary) and **name/label** (secondary) — users often search by ID number
+- Options format: `[['id' => 1, 'label' => 'Name'], ...]` — passed from the Livewire render method
+- Each option displays `#ID` prefix for easy identification
+
+---
+
 ## NativePHP Notes
 
 - Window title: `Installment Management System`

@@ -18,6 +18,8 @@ class AccountTransfer extends Component
 
     public string $notes = '';
 
+    public ?array $transferSummary = null;
+
     // Display data
     public ?string $customer_name = null;
 
@@ -80,10 +82,20 @@ class AccountTransfer extends Component
             }
         });
 
+        $newRmName = Employee::find($this->to_recovery_man_id)?->name ?? '';
+        $custName = $this->customer_name;
+        $fromRm = $this->current_rm_name;
+        $count = $activeAccounts->count();
+
+        $this->transferSummary = [
+            'customer' => $custName,
+            'from_rm' => $fromRm,
+            'to_rm' => $newRmName,
+            'accounts' => $count,
+        ];
+
         $this->reset(['customer_id', 'to_recovery_man_id', 'notes']);
         $this->resetCustomerInfo();
-
-        session()->flash('success', 'Recovery man transferred successfully for all active accounts.');
     }
 
     private function resetCustomerInfo(): void
@@ -97,9 +109,12 @@ class AccountTransfer extends Component
 
     public function render()
     {
+        $custOpts = Customer::orderBy('name')->get()->map(fn ($c) => ['id' => $c->id, 'label' => $c->name]);
+        $rmOpts = Employee::recoveryMen()->orderBy('name')->get()->map(fn ($e) => ['id' => $e->id, 'label' => $e->name.($e->area ? " ({$e->area})" : '')]);
+
         return view('livewire.customers.account-transfer', [
-            'customers' => Customer::orderBy('name')->get(),
-            'recoveryMen' => Employee::recoveryMen()->orderBy('name')->get(),
+            'custOpts' => $custOpts,
+            'rmOpts' => $rmOpts,
         ]);
     }
 }

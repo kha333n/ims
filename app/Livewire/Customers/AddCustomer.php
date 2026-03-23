@@ -23,6 +23,8 @@ class AddCustomer extends Component
 
     public string $shop_address = '';
 
+    public ?array $savedSummary = null;
+
     public function save(): void
     {
         $this->validate([
@@ -45,7 +47,14 @@ class AddCustomer extends Component
             'shop_address' => $this->shop_address ?: null,
         ]);
 
-        $this->redirect(route('customers.show', $customer->id));
+        $this->savedSummary = [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'mobile' => $customer->mobile ?? '—',
+            'cnic' => $customer->cnic ?? '—',
+        ];
+
+        $this->reset(['name', 'father_name', 'mobile', 'cnic', 'reference', 'home_address', 'shop_address']);
     }
 
     public function render()

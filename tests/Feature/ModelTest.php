@@ -32,15 +32,17 @@ class ModelTest extends TestCase
         $this->assertEquals('Ahmed Ali', $customer->name);
     }
 
-    public function test_product_formatted_price_attribute(): void
+    public function test_product_formatted_price_attributes(): void
     {
         $product = Product::create([
             'name' => 'AC DC',
-            'price' => 5000000, // 50,000 PKR in paisas
+            'sale_price' => 5000000,
+            'purchase_price' => 4000000,
             'quantity' => 10,
         ]);
 
-        $this->assertEquals('PKR 50,000', $product->formatted_price);
+        $this->assertEquals('PKR 50,000', $product->formatted_sale_price);
+        $this->assertEquals('PKR 40,000', $product->formatted_purchase_price);
     }
 
     public function test_employee_sale_man_scope(): void
@@ -55,8 +57,7 @@ class ModelTest extends TestCase
     public function test_account_relationships(): void
     {
         $customer = Customer::create(['name' => 'Test Customer']);
-        $supplier = Supplier::create(['name' => 'Test Supplier']);
-        $product = Product::create(['name' => 'LED TV', 'price' => 10000000, 'quantity' => 5]);
+        $product = Product::create(['name' => 'LED TV', 'sale_price' => 10000000, 'quantity' => 5]);
 
         $account = Account::create([
             'customer_id' => $customer->id,
@@ -118,7 +119,7 @@ class ModelTest extends TestCase
     public function test_purchase_increments_can_be_tracked(): void
     {
         $supplier = Supplier::create(['name' => 'ABC Corp']);
-        $product = Product::create(['name' => 'Buffer', 'price' => 200000, 'quantity' => 0]);
+        $product = Product::create(['name' => 'Buffer', 'sale_price' => 200000, 'quantity' => 0]);
 
         $purchase = Purchase::create([
             'product_id' => $product->id,

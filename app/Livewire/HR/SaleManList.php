@@ -14,6 +14,8 @@ class SaleManList extends Component
 
     public string $search = '';
 
+    public ?array $actionSummary = null;
+
     // Modal state
     public bool $showModal = false;
 
@@ -77,12 +79,15 @@ class SaleManList extends Component
             'commission_percent' => $this->commission_percent,
         ];
 
+        $action = $this->editingId ? 'Updated' : 'Added';
+
         if ($this->editingId) {
             Employee::findOrFail($this->editingId)->update($data);
         } else {
             Employee::create($data);
         }
 
+        $this->actionSummary = ['action' => $action, 'name' => $this->name, 'commission' => $this->commission_percent];
         $this->showModal = false;
         $this->resetForm();
     }
@@ -115,6 +120,7 @@ class SaleManList extends Component
             return;
         }
 
+        $this->actionSummary = ['action' => 'Deleted', 'name' => $employee->name, 'commission' => $employee->commission_percent];
         $employee->delete();
         $this->confirmingDeleteId = null;
         $this->deleteError = '';

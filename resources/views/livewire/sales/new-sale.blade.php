@@ -8,22 +8,38 @@
             </div>
         @endif
 
+        {{-- Summary after save --}}
+        @if ($summary)
+            <div class="mb-6 bg-white rounded-lg shadow border-l-4 border-green-500 px-6 py-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-bold text-green-700">Sale Completed</h2>
+                    <button wire:click="dismissSummary" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <dl class="grid grid-cols-3 gap-3 text-sm">
+                    <div><dt class="text-gray-500 text-xs">Account #</dt><dd class="font-bold text-navy-800">#{{ $summary['account_id'] }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Customer</dt><dd class="font-medium">{{ $summary['customer'] }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Items</dt><dd>{{ $summary['items'] }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Total</dt><dd class="font-medium">{{ formatMoney($summary['total']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Advance</dt><dd>{{ formatMoney($summary['advance']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Discount</dt><dd>{{ formatMoney($summary['discount']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Remaining</dt><dd class="font-bold text-red-600">{{ formatMoney($summary['remaining']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Installment</dt><dd>{{ $summary['installment_type'] }} — {{ formatMoney($summary['installment_amount']) }}</dd></div>
+                    <div><dt class="text-gray-500 text-xs">Staff</dt><dd>SM: {{ $summary['sale_man'] }} / RM: {{ $summary['recovery_man'] }}</dd></div>
+                </dl>
+                <div class="mt-3 flex gap-2">
+                    <a href="{{ route('customers.show', $summary['account_id']) }}" class="text-xs text-navy-600 hover:underline">View Customer</a>
+                </div>
+            </div>
+        @endif
+
         <div class="grid grid-cols-2 gap-6">
             {{-- Left: Customer Panel --}}
             <div class="space-y-4">
                 <div class="bg-white rounded-lg shadow px-5 py-4">
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Customer</h2>
                     <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Party ID</label>
-                            <select wire:model.live="customer_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                                <option value="">— Select Customer —</option>
-                                @foreach ($customers as $cust)
-                                    <option value="{{ $cust->id }}">#{{ $cust->id }} — {{ $cust->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('customer_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
+                        <x-searchable-select wire-model="customer_id" :options="$customerOpts" label="Party ID" placeholder="Search by ID or name..." :required="true" />
+                        @error('customer_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
 
                         @if ($customer_name)
                             <dl class="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded-lg px-3 py-2">
@@ -61,7 +77,6 @@
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
-
                         <div class="grid grid-cols-2 gap-3">
                             @if ($installment_type === 'weekly')
                                 <div>
@@ -83,19 +98,15 @@
                             @else
                                 <div></div>
                             @endif
-
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Installment Amount (PKR)</label>
                                 <input wire:model.live.debounce.300ms="installment_amount" type="number" step="0.01" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
                                 @error('installment_amount') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                         </div>
-
                         @if ($this->totalInstallments !== null)
                             <div class="bg-blue-50 border border-blue-200 rounded px-3 py-2">
-                                <p class="text-xs text-blue-800">
-                                    Estimated: <strong>{{ $this->totalInstallments }} {{ $this->periodLabel }}</strong> to complete
-                                </p>
+                                <p class="text-xs text-blue-800">Estimated: <strong>{{ $this->totalInstallments }} {{ $this->periodLabel }}</strong> to complete</p>
                             </div>
                         @endif
                     </div>
@@ -106,23 +117,11 @@
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Staff Assignment</h2>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Sale Man</label>
-                            <select wire:model="sale_man_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                                <option value="">— Select —</option>
-                                @foreach ($saleMen as $sm)
-                                    <option value="{{ $sm->id }}">{{ $sm->name }}</option>
-                                @endforeach
-                            </select>
+                            <x-searchable-select wire-model="sale_man_id" :options="$smOpts" label="Sale Man" placeholder="Search sale man..." :required="true" />
                             @error('sale_man_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Recovery Man</label>
-                            <select wire:model="recovery_man_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                                <option value="">— Select —</option>
-                                @foreach ($recoveryMen as $rm)
-                                    <option value="{{ $rm->id }}">{{ $rm->name }}{{ $rm->area ? " ({$rm->area})" : '' }}</option>
-                                @endforeach
-                            </select>
+                            <x-searchable-select wire-model="recovery_man_id" :options="$rmOpts" label="Recovery Man" placeholder="Search recovery man..." :required="true" />
                             @error('recovery_man_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -136,13 +135,7 @@
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Items</h2>
                     <div class="flex items-end gap-2">
                         <div class="flex-1">
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Product</label>
-                            <select wire:model.live="selected_product_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
-                                <option value="">— Select —</option>
-                                @foreach ($products as $prod)
-                                    <option value="{{ $prod->id }}">{{ $prod->name }} ({{ $prod->quantity }} in stock)</option>
-                                @endforeach
-                            </select>
+                            <x-searchable-select wire-model="selected_product_id" :options="$productOpts" label="Product" placeholder="Search product..." />
                             @error('selected_product_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div class="w-28">
@@ -182,9 +175,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="5" class="px-4 py-6 text-center text-gray-400">No items added yet.</td>
-                                </tr>
+                                <tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No items added yet.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -217,10 +208,9 @@
                         </div>
                     </div>
 
-                    {{-- Proceed Button --}}
                     <div class="flex justify-end">
                         <button wire:click="proceed" class="px-8 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors">
-                            Proceed Sale
+                            Save Sale
                         </button>
                     </div>
                 @endif

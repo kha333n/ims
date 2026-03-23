@@ -1,5 +1,14 @@
 <div>
     <div class="max-w-6xl mx-auto">
+        @if ($actionSummary)
+            <div class="mb-4 bg-white rounded-lg shadow border-l-4 border-green-500 px-6 py-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-green-700">{{ $actionSummary['action'] }}: {{ $actionSummary['detail'] }}</span>
+                    <button wire:click="$set('actionSummary', null)" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+            </div>
+        @endif
+
         {{-- Header --}}
         <div class="flex items-center justify-between mb-4">
             <div>
@@ -156,11 +165,6 @@
                 <div class="bg-white rounded-lg shadow px-5 py-4">
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Record Payment</h2>
 
-                    @if (session()->has('payment_success'))
-                        <div class="mb-3 px-3 py-2 bg-green-50 border border-green-200 text-green-700 text-xs rounded-lg">
-                            {{ session('payment_success') }}
-                        </div>
-                    @endif
 
                     @if ($accounts->where('status', 'active')->count() > 0)
                         <form wire:submit="savePayment" class="space-y-3">
