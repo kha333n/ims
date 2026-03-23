@@ -2,6 +2,59 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('dashboard');
+Route::get('/', fn () => view('dashboard'))->name('dashboard');
+
+// Inventory
+Route::prefix('inventory')->name('inventory.')->group(function () {
+    Route::get('/products', fn () => view('placeholder', ['title' => 'Product List']))->name('products');
+    Route::get('/purchase', fn () => view('placeholder', ['title' => 'Purchase Point']))->name('purchase');
+});
+
+// HR
+Route::prefix('hr')->name('hr.')->group(function () {
+    Route::get('/sale-men', fn () => view('placeholder', ['title' => 'Sale Men']))->name('sale-men');
+    Route::get('/recovery-men', fn () => view('placeholder', ['title' => 'Recovery Men']))->name('recovery-men');
+});
+
+// Customers
+Route::prefix('customers')->name('customers.')->group(function () {
+    Route::get('/', fn () => view('placeholder', ['title' => 'Customers']))->name('index');
+    Route::get('/new', fn () => view('placeholder', ['title' => 'New Customer']))->name('create');
+    Route::get('/{id}', fn ($id) => view('placeholder', ['title' => 'Customer Detail']))->name('show');
+    Route::get('/closure', fn () => view('placeholder', ['title' => 'Account Closure']))->name('closure');
+    Route::get('/transfer', fn () => view('placeholder', ['title' => 'Account Transfer']))->name('transfer');
+    Route::get('/installment-update', fn () => view('placeholder', ['title' => 'Installment Update']))->name('installment-update');
+    Route::get('/problems', fn () => view('placeholder', ['title' => 'Problem Entry']))->name('problems');
+});
+
+// Sales
+Route::prefix('sales')->name('sales.')->group(function () {
+    Route::get('/new', fn () => view('placeholder', ['title' => 'New Sale']))->name('new');
+    Route::get('/return', fn () => view('placeholder', ['title' => 'Return Point']))->name('return');
+});
+
+// Recovery
+Route::prefix('recovery')->name('recovery.')->group(function () {
+    Route::get('/entry', fn () => view('placeholder', ['title' => 'Recovery Entry']))->name('entry');
+});
+
+// Reports
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/', fn () => view('placeholder', ['title' => 'Reports']))->name('index');
+    Route::get('/item-sales', fn () => view('placeholder', ['title' => 'Item Sale Report']))->name('item-sales');
+    Route::get('/item-detail', fn () => view('placeholder', ['title' => 'Item Detail Report']))->name('item-detail');
+    Route::get('/daily-recovery', fn () => view('placeholder', ['title' => 'Daily Recovery Report']))->name('daily-recovery');
+    Route::get('/monthly-recovery', fn () => view('placeholder', ['title' => 'Monthly Recovery Report']))->name('monthly-recovery');
+    Route::get('/returns', fn () => view('placeholder', ['title' => 'Return Report']))->name('returns');
+    Route::get('/salesman', fn () => view('placeholder', ['title' => 'Salesman Report']))->name('salesman');
+    Route::get('/inventory', fn () => view('placeholder', ['title' => 'Inventory Status']))->name('inventory');
+    Route::get('/customer', fn () => view('placeholder', ['title' => 'Customer Account Report']))->name('customer');
+    Route::get('/defaulters', fn () => view('placeholder', ['title' => 'Defaulter Report']))->name('defaulters');
+});
+
+// Settings
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('/', fn () => view('placeholder', ['title' => 'Company Settings']))->name('index');
+    Route::get('/backup', fn () => view('placeholder', ['title' => 'Backup & Restore']))->name('backup');
+    Route::get('/license', fn () => view('placeholder', ['title' => 'License']))->name('license');
 });

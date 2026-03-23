@@ -1,43 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name') }}</title>
+    <title>Installment Management System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-gray-100 text-gray-900">
+<body class="h-full bg-content flex flex-col" x-data>
 
-<div class="flex h-screen">
-    {{-- Sidebar --}}
-    <aside class="w-56 bg-gray-900 text-white flex flex-col shrink-0">
-        <div class="px-4 py-4 border-b border-gray-700">
-            <p class="text-xs font-bold uppercase tracking-widest text-gray-400">IMS</p>
-            <p class="text-sm font-semibold mt-1 leading-tight">Installment<br>Management System</p>
+    {{-- Top Navigation Bar --}}
+    <nav class="no-print bg-navy-800 text-white select-none shrink-0">
+        <div class="flex items-stretch h-10">
+
+            {{-- App Brand --}}
+            <div class="flex items-center px-4 bg-navy-900 text-sm font-bold tracking-widest shrink-0">
+                IMS
+            </div>
+
+            {{-- Menus --}}
+            @php
+                $path = request()->path();
+                $menus = [
+                    'Items' => [
+                        'prefixes' => ['inventory'],
+                        'items' => [
+                            ['label' => 'Product List',  'route' => 'inventory.products'],
+                            ['label' => 'New Purchase',  'route' => 'inventory.purchase'],
+                        ],
+                    ],
+                    'Management' => [
+                        'prefixes' => ['customers', 'sales', 'hr'],
+                        'items' => [
+                            ['label' => 'Customers',          'route' => 'customers.index'],
+                            ['label' => 'New Sale',           'route' => 'sales.new'],
+                            ['label' => 'Return Point',       'route' => 'sales.return'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Sale Men',           'route' => 'hr.sale-men'],
+                            ['label' => 'Recovery Men',       'route' => 'hr.recovery-men'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Account Closure',    'route' => 'customers.closure'],
+                            ['label' => 'Account Transfer',   'route' => 'customers.transfer'],
+                            ['label' => 'Installment Update', 'route' => 'customers.installment-update'],
+                            ['label' => 'Problem Entry',      'route' => 'customers.problems'],
+                        ],
+                    ],
+                    'Recovery' => [
+                        'prefixes' => ['recovery'],
+                        'items' => [
+                            ['label' => 'Recovery Entry', 'route' => 'recovery.entry'],
+                        ],
+                    ],
+                    'Reports' => [
+                        'prefixes' => ['reports'],
+                        'items' => [
+                            ['label' => 'Item Sale Report',   'route' => 'reports.item-sales'],
+                            ['label' => 'Item Detail Report', 'route' => 'reports.item-detail'],
+                            ['label' => 'Daily Recovery',     'route' => 'reports.daily-recovery'],
+                            ['label' => 'Monthly Recovery',   'route' => 'reports.monthly-recovery'],
+                            ['label' => 'Return Report',      'route' => 'reports.returns'],
+                            ['label' => 'Salesman Report',    'route' => 'reports.salesman'],
+                            ['label' => 'Inventory Status',   'route' => 'reports.inventory'],
+                            ['label' => 'Customer Account',   'route' => 'reports.customer'],
+                            ['label' => 'Defaulter Report',   'route' => 'reports.defaulters'],
+                        ],
+                    ],
+                    'Settings' => [
+                        'prefixes' => ['settings'],
+                        'items' => [
+                            ['label' => 'Company Settings', 'route' => 'settings.index'],
+                            ['label' => 'Backup & Restore', 'route' => 'settings.backup'],
+                            ['label' => 'License',          'route' => 'settings.license'],
+                        ],
+                    ],
+                ];
+            @endphp
+
+            @foreach ($menus as $label => $menu)
+                @php
+                    $isActive = collect($menu['prefixes'])->contains(fn($p) => str_starts_with($path, $p));
+                @endphp
+                <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                    <button class="flex items-center h-full px-4 text-sm font-medium transition-colors gap-1
+                                   {{ $isActive ? 'bg-navy-600 text-white' : 'text-gray-200 hover:bg-navy-700 hover:text-white' }}">
+                        {{ $label }}
+                        <svg class="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open"
+                         x-transition:enter="transition ease-out duration-75"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="absolute left-0 top-full z-50 min-w-48 bg-navy-800 border border-navy-700 shadow-2xl py-1"
+                         style="display:none;">
+                        @foreach ($menu['items'] as $item)
+                            @if ($item['label'] === '---')
+                                <div class="my-1 border-t border-navy-700"></div>
+                            @else
+                                <a href="{{ route($item['route']) }}"
+                                   class="block px-4 py-1.5 text-sm text-gray-300 hover:bg-navy-600 hover:text-white whitespace-nowrap">
+                                    {{ $item['label'] }}
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
+            <div class="flex-1"></div>
+
+            {{-- Clock --}}
+            <div class="flex items-center px-4 text-xs text-gray-400 tabular-nums"
+                 x-data="{ t: '' }"
+                 x-init="setInterval(() => t = new Date().toLocaleTimeString('en-GB'), 1000)">
+                <span x-text="t"></span>
+            </div>
         </div>
-        <nav class="flex-1 py-4 overflow-y-auto text-sm">
-            <a href="/" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-700 rounded mx-2">
-                Dashboard
+    </nav>
+
+    {{-- Quick Toolbar --}}
+    <div class="no-print bg-toolbar shrink-0 flex items-center gap-1 px-2 py-1 border-b border-navy-900">
+        @php
+            $toolbar = [
+                ['label' => 'New Purchases',  'route' => 'inventory.purchase', 'icon' => 'M12 4v16m8-8H4'],
+                ['label' => 'New Sales',       'route' => 'sales.new',          'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
+                ['label' => 'Recovery Entry',  'route' => 'recovery.entry',     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+                ['label' => 'New Customer',    'route' => 'customers.create',   'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'],
+                ['label' => 'Main Reports',    'route' => 'reports.index',      'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+            ];
+        @endphp
+        @foreach ($toolbar as $btn)
+            <a href="{{ route($btn['route']) }}"
+               class="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
+                      bg-navy-700 hover:bg-navy-500 text-gray-200 hover:text-white transition-colors">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $btn['icon'] }}"/>
+                </svg>
+                {{ $btn['label'] }}
             </a>
-        </nav>
-        <div class="px-4 py-3 border-t border-gray-700 text-xs text-gray-500">
-            Techmiddle Technologies
-        </div>
-    </aside>
-
-    {{-- Main content --}}
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
-            <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
-            <span class="text-xs text-gray-400">{{ now()->format('d/M/Y') }}</span>
-        </header>
-        <main class="flex-1 overflow-y-auto p-6">
-            {{ $slot }}
-        </main>
+        @endforeach
     </div>
-</div>
 
-@livewireScripts
+    {{-- Main Content Area --}}
+    <main class="flex-1 overflow-auto p-4">
+        {{ $slot }}
+    </main>
+
+    @livewireScripts
 </body>
 </html>

@@ -8,4 +8,21 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* IMS Color Palette */
+    --color-navy-900: #0a1929;
+    --color-navy-800: #0f2744;
+    --color-navy-700: #163354;
+    --color-navy-600: #1e3a5f;
+    --color-navy-500: #1e4d8c;
+    --color-navy-400: #2563eb;
+    --color-navy-300: #3b82f6;
+    --color-toolbar: #1a3050;
+    --color-toolbar-hover: #243d63;
+    --color-content: #f0f4f8;
+}
+
+/* Print styles — hide chrome for reports */
+@media print {
+    .no-print { display: none !important; }
 }
