@@ -1,10 +1,15 @@
 <?php
 
+use App\Livewire\Customers\AccountClosure;
+use App\Livewire\Customers\AccountTransfer;
 use App\Livewire\Customers\AddCustomer;
+use App\Livewire\Customers\CustomerDetail;
 use App\Livewire\Customers\CustomerList;
+use App\Livewire\Customers\InstallmentUpdate;
 use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
+use App\Livewire\Sales\NewSale;
 use App\Livewire\Inventory\PurchasePoint;
 use Illuminate\Support\Facades\Route;
 
@@ -26,11 +31,11 @@ Route::prefix('hr')->name('hr.')->group(function () {
 Route::prefix('customers')->name('customers.')->group(function () {
     Route::get('/', CustomerList::class)->name('index');
     Route::get('/new', AddCustomer::class)->name('create');
-    Route::get('/{id}', fn ($id) => view('placeholder', ['title' => 'Customer Detail']))->name('show');
-    Route::get('/closure', fn () => view('placeholder', ['title' => 'Account Closure']))->name('closure');
-    Route::get('/transfer', fn () => view('placeholder', ['title' => 'Account Transfer']))->name('transfer');
-    Route::get('/installment-update', fn () => view('placeholder', ['title' => 'Installment Update']))->name('installment-update');
+    Route::get('/closure', AccountClosure::class)->name('closure');
+    Route::get('/transfer', AccountTransfer::class)->name('transfer');
+    Route::get('/installment-update', InstallmentUpdate::class)->name('installment-update');
     Route::get('/problems', fn () => view('placeholder', ['title' => 'Problem Entry']))->name('problems');
+    Route::get('/{id}', CustomerDetail::class)->name('show');
 });
 
 // Sales
