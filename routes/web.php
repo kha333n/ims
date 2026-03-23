@@ -10,6 +10,16 @@ use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
 use App\Livewire\Inventory\PurchasePoint;
+use App\Livewire\Recovery\RecoveryEntry;
+use App\Livewire\Reports\CustomerReport;
+use App\Livewire\Reports\DailyRecoveryReport;
+use App\Livewire\Reports\DefaulterReport;
+use App\Livewire\Reports\InventoryReport;
+use App\Livewire\Reports\ItemDetailReport;
+use App\Livewire\Reports\ItemSaleReport;
+use App\Livewire\Reports\MonthlyRecoveryReport;
+use App\Livewire\Reports\ReturnReport;
+use App\Livewire\Reports\SalesmanReport;
 use App\Livewire\Sales\NewSale;
 use App\Livewire\Sales\ReturnPoint;
 use Illuminate\Support\Facades\Route;
@@ -47,21 +57,21 @@ Route::prefix('sales')->name('sales.')->group(function () {
 
 // Recovery
 Route::prefix('recovery')->name('recovery.')->group(function () {
-    Route::get('/entry', fn () => view('placeholder', ['title' => 'Recovery Entry']))->name('entry');
+    Route::get('/entry', RecoveryEntry::class)->name('entry');
 });
 
 // Reports
 Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/', fn () => view('placeholder', ['title' => 'Reports']))->name('index');
-    Route::get('/item-sales', fn () => view('placeholder', ['title' => 'Item Sale Report']))->name('item-sales');
-    Route::get('/item-detail', fn () => view('placeholder', ['title' => 'Item Detail Report']))->name('item-detail');
-    Route::get('/daily-recovery', fn () => view('placeholder', ['title' => 'Daily Recovery Report']))->name('daily-recovery');
-    Route::get('/monthly-recovery', fn () => view('placeholder', ['title' => 'Monthly Recovery Report']))->name('monthly-recovery');
-    Route::get('/returns', fn () => view('placeholder', ['title' => 'Return Report']))->name('returns');
-    Route::get('/salesman', fn () => view('placeholder', ['title' => 'Salesman Report']))->name('salesman');
-    Route::get('/inventory', fn () => view('placeholder', ['title' => 'Inventory Status']))->name('inventory');
-    Route::get('/customer', fn () => view('placeholder', ['title' => 'Customer Account Report']))->name('customer');
-    Route::get('/defaulters', fn () => view('placeholder', ['title' => 'Defaulter Report']))->name('defaulters');
+    Route::get('/item-sales', ItemSaleReport::class)->name('item-sales');
+    Route::get('/item-detail', ItemDetailReport::class)->name('item-detail');
+    Route::get('/daily-recovery', DailyRecoveryReport::class)->name('daily-recovery');
+    Route::get('/monthly-recovery', MonthlyRecoveryReport::class)->name('monthly-recovery');
+    Route::get('/returns', ReturnReport::class)->name('returns');
+    Route::get('/salesman', SalesmanReport::class)->name('salesman');
+    Route::get('/inventory', InventoryReport::class)->name('inventory');
+    Route::get('/customer', CustomerReport::class)->name('customer');
+    Route::get('/defaulters', DefaulterReport::class)->name('defaulters');
 });
 
 // Settings
