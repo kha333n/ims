@@ -1,25 +1,31 @@
 <?php
 
+use App\Livewire\Customers\AddCustomer;
+use App\Livewire\Customers\CustomerList;
+use App\Livewire\HR\RecoveryManList;
+use App\Livewire\HR\SaleManList;
+use App\Livewire\Inventory\ProductList;
+use App\Livewire\Inventory\PurchasePoint;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('dashboard'))->name('dashboard');
 
 // Inventory
 Route::prefix('inventory')->name('inventory.')->group(function () {
-    Route::get('/products', fn () => view('placeholder', ['title' => 'Product List']))->name('products');
-    Route::get('/purchase', fn () => view('placeholder', ['title' => 'Purchase Point']))->name('purchase');
+    Route::get('/products', ProductList::class)->name('products');
+    Route::get('/purchase', PurchasePoint::class)->name('purchase');
 });
 
 // HR
 Route::prefix('hr')->name('hr.')->group(function () {
-    Route::get('/sale-men', fn () => view('placeholder', ['title' => 'Sale Men']))->name('sale-men');
-    Route::get('/recovery-men', fn () => view('placeholder', ['title' => 'Recovery Men']))->name('recovery-men');
+    Route::get('/sale-men', SaleManList::class)->name('sale-men');
+    Route::get('/recovery-men', RecoveryManList::class)->name('recovery-men');
 });
 
 // Customers
 Route::prefix('customers')->name('customers.')->group(function () {
-    Route::get('/', fn () => view('placeholder', ['title' => 'Customers']))->name('index');
-    Route::get('/new', fn () => view('placeholder', ['title' => 'New Customer']))->name('create');
+    Route::get('/', CustomerList::class)->name('index');
+    Route::get('/new', AddCustomer::class)->name('create');
     Route::get('/{id}', fn ($id) => view('placeholder', ['title' => 'Customer Detail']))->name('show');
     Route::get('/closure', fn () => view('placeholder', ['title' => 'Account Closure']))->name('closure');
     Route::get('/transfer', fn () => view('placeholder', ['title' => 'Account Transfer']))->name('transfer');
