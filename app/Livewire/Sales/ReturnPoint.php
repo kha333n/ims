@@ -5,6 +5,7 @@ namespace App\Livewire\Sales;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use App\Models\Product;
 use App\Models\ProductReturn;
 use Illuminate\Support\Facades\DB;
@@ -118,6 +119,15 @@ class ReturnPoint extends Component
                 Product::where('id', $accountItem->product_id)
                     ->increment('quantity', $accountItem->quantity);
             }
+
+            FinancialLedger::record('return', [
+                'account_id' => $account->id,
+                'customer_id' => $account->customer_id,
+                'product_id' => $accountItem->product_id,
+                'credit' => $returningAmount,
+                'balance_after' => $account->fresh()->remaining_amount,
+                'description' => "Return on Acc#{$account->id} — {$this->inventory_action}",
+            ]);
         });
 
         $itemName = collect($this->accountInfo['items'] ?? [])->firstWhere('id', $this->account_item_id)['name'] ?? 'Unknown';

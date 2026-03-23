@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\AccountItem;
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductReturn;
@@ -47,12 +48,24 @@ class DemoDataSeeder extends Seeder
         foreach ($products as $product) {
             $supplier = $suppliers->random();
             for ($p = 0; $p < rand(2, 4); $p++) {
+                $qty = rand(5, 20);
+                $cost = (int) ($product->purchase_price * (0.9 + rand(0, 20) / 100));
+                $purchaseDate = now()->subDays(rand(10, 120));
+
                 Purchase::create([
                     'product_id' => $product->id,
                     'supplier_id' => $supplier->id,
-                    'quantity' => rand(5, 20),
-                    'unit_cost' => (int) ($product->purchase_price * (0.9 + rand(0, 20) / 100)),
-                    'purchase_date' => now()->subDays(rand(10, 120)),
+                    'quantity' => $qty,
+                    'unit_cost' => $cost,
+                    'purchase_date' => $purchaseDate,
+                ]);
+
+                FinancialLedger::record('purchase', [
+                    'product_id' => $product->id,
+                    'credit' => $cost * $qty,
+                    'description' => "Stock purchase — {$product->name} x{$qty}",
+                    'event_date' => $purchaseDate,
+                    'meta' => ['supplier_id' => $supplier->id],
                 ]);
             }
         }
@@ -65,7 +78,7 @@ class DemoDataSeeder extends Seeder
             $product = $products->random();
             $saleMan = $saleMen->random();
             $recoveryMan = $recoveryMen->random();
-            $type = $types[$i % 3]; // rotate evenly: daily, weekly, monthly
+            $type = $types[$i % 3];
             $total = $product->sale_price * rand(1, 2);
             $advance = (int) ($total * (rand(5, 20) / 100));
             $discount = rand(0, 5) === 0 ? (int) ($total * 0.02) : 0;
@@ -73,7 +86,6 @@ class DemoDataSeeder extends Seeder
             $instAmt = max(1000, (int) ($remaining / rand(10, 30)));
             $saleDate = now()->subDays(rand(5, 200));
 
-            // Mix statuses: ~20% closed, rest active
             $status = rand(0, 4) === 0 ? 'closed' : 'active';
 
             $account = Account::create([
@@ -91,6 +103,16 @@ class DemoDataSeeder extends Seeder
                 'installment_amount' => $instAmt,
                 'status' => $status,
                 'closed_at' => $status === 'closed' ? now()->subDays(rand(1, 30)) : null,
+            ]);
+
+            // Ledger: sale
+            FinancialLedger::record('sale', [
+                'account_id' => $account->id,
+                'customer_id' => $customer->id,
+                'debit' => $total,
+                'balance_after' => $remaining,
+                'description' => "New sale Acc#{$account->id} — {$product->name}",
+                'event_date' => $saleDate,
             ]);
 
             // 1-2 items per account
@@ -115,9 +137,19 @@ class DemoDataSeeder extends Seeder
                     'collected_by' => $saleMan->id,
                     'remarks' => 'Advance at sale',
                 ]);
+
+                FinancialLedger::record('payment', [
+                    'account_id' => $account->id,
+                    'customer_id' => $customer->id,
+                    'employee_id' => $saleMan->id,
+                    'debit' => $advance,
+                    'balance_after' => $remaining,
+                    'description' => "Advance payment Acc#{$account->id}",
+                    'event_date' => $saleDate,
+                ]);
             }
 
-            // Installment payments (more for older accounts)
+            // Installment payments
             $daysSinceSale = $saleDate->diffInDays(now());
             $paymentsCount = rand(2, min(15, (int) ($daysSinceSale / 7) + 2));
             $paid = $advance;
@@ -143,35 +175,84 @@ class DemoDataSeeder extends Seeder
                 ]);
 
                 $paid += $payAmt;
+                $balanceAfter = max(0, $total - $paid - $discount);
+
+                FinancialLedger::record('recovery', [
+                    'account_id' => $account->id,
+                    'customer_id' => $customer->id,
+                    'employee_id' => $recoveryMan->id,
+                    'debit' => $payAmt,
+                    'balance_after' => $balanceAfter,
+                    'description' => "Recovery collection Acc#{$account->id}",
+                    'event_date' => $payDate,
+                ]);
             }
 
             // Update remaining to reflect actual payments
             $actualRemaining = max(0, $total - $paid - $discount);
             $account->update(['remaining_amount' => $actualRemaining]);
+
+            // Ledger: closure + loss if closed
+            if ($status === 'closed') {
+                $closedAt = $account->closed_at;
+
+                FinancialLedger::record('closure', [
+                    'account_id' => $account->id,
+                    'customer_id' => $customer->id,
+                    'balance_after' => $actualRemaining,
+                    'description' => "Account #{$account->id} closed",
+                    'event_date' => $closedAt,
+                    'meta' => ['remaining_at_close' => $actualRemaining],
+                ]);
+
+                if ($actualRemaining > 0) {
+                    FinancialLedger::record('loss', [
+                        'account_id' => $account->id,
+                        'customer_id' => $customer->id,
+                        'credit' => $actualRemaining,
+                        'balance_after' => $actualRemaining,
+                        'description' => "Write-off Acc#{$account->id} — unpaid balance at closure",
+                        'event_date' => $closedAt,
+                    ]);
+                }
+            }
         }
 
-        // ── Some returns ───────────────────────────────────────────────────
-        $activeAccounts = Account::where('status', 'active')->with('items')->take(5)->get();
+        // ── Returns ──────────────────────────────────────────────────────────
+        $activeAccounts = Account::where('status', 'active')->with('items.product')->take(5)->get();
         foreach ($activeAccounts as $account) {
             $item = $account->items->first();
             if (! $item || $item->returned) {
                 continue;
             }
 
+            $returnAmt = (int) ($item->unit_price * 0.8);
+            $returnDate = now()->subDays(rand(1, 30));
+
             ProductReturn::create([
                 'account_id' => $account->id,
                 'account_item_id' => $item->id,
                 'quantity' => 1,
-                'returning_amount' => (int) ($item->unit_price * 0.8),
-                'return_date' => now()->subDays(rand(1, 30)),
+                'returning_amount' => $returnAmt,
+                'return_date' => $returnDate,
                 'reason' => collect(['Defective', 'Wrong item', 'Customer changed mind'])->random(),
                 'inventory_action' => rand(0, 1) ? 'restock' : 'scrap',
             ]);
 
             $item->update(['returned' => true]);
+
+            FinancialLedger::record('return', [
+                'account_id' => $account->id,
+                'customer_id' => $account->customer_id,
+                'product_id' => $item->product_id,
+                'credit' => $returnAmt,
+                'balance_after' => $account->remaining_amount,
+                'description' => "Return on Acc#{$account->id} — {$item->product?->name}",
+                'event_date' => $returnDate,
+            ]);
         }
 
-        // ── Some payments for today (so recovery entry shows data) ─────────
+        // ── Today's payments (recovery entry demo data) ──────────────────────
         $todayAccounts = Account::where('status', 'active')
             ->where('remaining_amount', '>', 0)
             ->where('installment_type', 'daily')
@@ -185,6 +266,16 @@ class DemoDataSeeder extends Seeder
                 'transaction_type' => 'installment',
                 'payment_date' => today(),
                 'collected_by' => $account->recovery_man_id,
+            ]);
+
+            FinancialLedger::record('recovery', [
+                'account_id' => $account->id,
+                'customer_id' => $account->customer_id,
+                'employee_id' => $account->recovery_man_id,
+                'debit' => $account->installment_amount,
+                'balance_after' => max(0, $account->remaining_amount - $account->installment_amount),
+                'description' => "Recovery collection Acc#{$account->id}",
+                'event_date' => today(),
             ]);
         }
     }

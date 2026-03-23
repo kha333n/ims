@@ -394,80 +394,204 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 
 ---
 
-### TASK-035B: Report — Profit & Loss Report
+## Phase 7B: Financial Reports & Ledger
 
-- Livewire: `Reports\ProfitLossReport`
-- Filters: Date From, Date To
-- Calculates per-sale profit: `account_items.unit_price` (sale) minus `products.purchase_price` (cost) per item sold
-- Shows: Total Sales Revenue, Total Cost of Goods, Gross Profit, Discounts Given, Losses (closures without full payment), Net Profit
-- Loss calculation: for closed accounts where `remaining_amount > 0` at closure (and currently still closed — reopened accounts are NOT losses)
-- Temporary vs permanent loss: if an account was closed then reopened, the closure period is a temporary loss (shown separately if in date range) but not counted as permanent loss
-- Groups by month or date range
-- Print
-- **Deliverable:** `/reports/profit-loss` shows financial health
+> These are separate from operational reports. Accessible under a dedicated "Financial" menu section.
+> All financial reports support date-range filtering and print. Some also have all-time/generic views.
 
 ---
 
-### TASK-035C: Report — Financial Ledger Report
-
-- Livewire: `Reports\FinancialLedgerReport`
-- Filters: Date From, Date To, Event Type (all/sale/payment/return/closure/activation/discount/purchase)
-- Table: Date, Event Type, Account#, Customer, Product, Debit, Credit, Balance, Description
-- Running totals for debits and credits
-- Uses `financial_ledger` table — every money-affecting action logs here
-- Print
-- **Deliverable:** `/reports/financial-ledger` full audit trail
-
----
-
-### TASK-035D: Report — Supplier Comparison Report
-
-- Livewire: `Reports\SupplierComparisonReport`
-- Filters: Product (optional)
-- Table: Product, Supplier, Last Price, Last Qty, Last Date, Current Best Price
-- Highlights lowest-price supplier per product in green
-- Uses `supplier_products` and `purchases` tables
-- Print
-- **Deliverable:** `/reports/supplier-comparison` shows who offers best price
-
----
-
-### TASK-035E: Report — Credit & Debit Summary
-
-- Livewire: `Reports\CreditDebitReport`
-- Filters: Date From, Date To, Group By (Day/Week/Month)
-- Shows: Total Credits (money out: purchases, discounts, losses), Total Debits (money in: sales, payments), Net Balance
-- Chart-ready summary (table format for now, chart later if needed)
-- Print
-- **Deliverable:** `/reports/credit-debit` high-level financial summary
-
----
-
-### TASK-035F: Integrate Financial Ledger Recording
+### TASK-F01: Integrate Financial Ledger Recording
 
 - Add `FinancialLedger::record()` calls to every money-affecting action:
   - `NewSale::proceed()` → event_type: `sale`, debit = total_amount
   - `NewSale::proceed()` (advance) → event_type: `payment`, debit = advance_amount
   - `CustomerDetail::savePayment()` → event_type: `payment`, debit = amount
+  - `RecoveryEntry::processPayments()` → event_type: `recovery`, debit = amount per account
   - `ReturnPoint::processReturn()` → event_type: `return`, credit = returning_amount
-  - `AccountClosure::closeAccount()` → event_type: `closure`, credit = remaining (if loss), meta = {discount, was_forced}
+  - `AccountClosure::closeAccount()` → event_type: `closure`, meta = {discount, remaining_at_close}
   - `AccountClosure::activateAccount()` → event_type: `activation`, meta = {previous_closure_date}
   - `PurchasePoint::savePurchase()` → event_type: `purchase`, credit = total_cost
-- Loss tracking: when closing with remaining > 0, record as loss. When reopening, record reversal entry
+- Loss tracking: when closing with remaining > 0, record as loss. When reopening, record reversal
 - All entries include `balance_after` for the account at that point
 - Tests: verify ledger entries created for each action type
 - **Deliverable:** Full financial audit trail in `financial_ledger` table
+- **Must be done first — all financial reports depend on this**
 
 ---
 
-### TASK-035G: Purchase Point — Supplier Price Suggestions
+### TASK-F02: Financial Ledger Report (Complete History)
+
+- Livewire: `Financial\LedgerReport`
+- Route: `/financial/ledger`
+- Filters: Date From, Date To, Event Type (all/sale/payment/recovery/return/closure/activation/purchase), Customer (optional), Account# (optional)
+- Table: Sr#, Date/Time, Event Type, Account#, Customer, Description, Debit (In), Credit (Out), Running Balance
+- Running totals row: Total Debits, Total Credits, Net
+- Generic mode (no date filter): shows last 500 entries
+- Date-range mode: shows all entries in range
+- Color coding: green for money in (debit), red for money out (credit)
+- Print
+- **Deliverable:** `/financial/ledger` — complete transaction journal like a bank statement
+
+---
+
+### TASK-F03: Daily Cash Book
+
+- Livewire: `Financial\DailyCashBook`
+- Route: `/financial/cash-book`
+- Default: today. Can pick any date.
+- Two-column format (traditional cash book style):
+  - Left: Receipts (money in) — sales advances, installment collections, manual payments
+  - Right: Payments (money out) — purchases, refunds/returns
+- Opening Balance (carried from previous day)
+- Closing Balance = Opening + Receipts - Payments
+- Derived from `financial_ledger` grouped by date
+- Print (A4 landscape)
+- **Deliverable:** `/financial/cash-book` — daily cash register, the most-used report for small Pakistani businesses
+
+---
+
+### TASK-F04: Profit & Loss Statement
+
+- Livewire: `Financial\ProfitLossReport`
+- Route: `/financial/profit-loss`
+- Filters: Date From, Date To (default: current month)
+- Sections:
+  - **Revenue:** Total sale amounts from accounts created in period
+  - **Cost of Goods Sold:** Sum of purchase_price × quantity for items sold in period
+  - **Gross Profit:** Revenue - COGS
+  - **Discounts Given:** Sum of discount_amount on accounts in period
+  - **Losses / Write-offs:** Remaining balance on accounts closed in period (still closed — reopened ones excluded)
+  - **Returns Adjustment:** Total returning_amount in period
+  - **Net Profit:** Gross Profit - Discounts - Losses - Returns
+- Comparison column: same period last month/year (optional toggle)
+- Print
+- **Deliverable:** `/financial/profit-loss` — clear picture of business profitability
+
+---
+
+### TASK-F05: Outstanding Receivables (Aging Report)
+
+- Livewire: `Financial\ReceivablesReport`
+- Route: `/financial/receivables`
+- Generic (no date filter needed — shows current snapshot)
+- Optional filter: Recovery Man, Customer
+- Aging buckets: 0-30 days, 31-60 days, 61-90 days, 90+ days (based on sale_date)
+- Table: Acc#, Customer, Phone, RM, Sale Date, Days Old, Total, Paid, Remaining, Aging Bucket
+- Summary row per bucket: count of accounts, total remaining
+- Grand total at bottom
+- Sort by aging (oldest first)
+- Print
+- **Deliverable:** `/financial/receivables` — who owes how much and for how long
+
+---
+
+### TASK-F06: Collection Performance Report
+
+- Livewire: `Financial\CollectionReport`
+- Route: `/financial/collections`
+- Filters: Date From, Date To (default: current month), Group By (Day/Week/Month)
+- Per period shows:
+  - **Expected:** Sum of installment_amount for all active accounts due in that period
+  - **Collected:** Actual payments received
+  - **Shortfall:** Expected - Collected
+  - **Collection Rate %:** (Collected / Expected) × 100
+- Optional: Per Recovery Man breakdown
+- Summary: Total expected, total collected, overall rate
+- Print
+- **Deliverable:** `/financial/collections` — are we collecting what we should be?
+
+---
+
+### TASK-F07: Supplier Expense Report
+
+- Livewire: `Financial\SupplierExpenseReport`
+- Route: `/financial/supplier-expenses`
+- Filters: Date From, Date To, Supplier (optional)
+- Table: Supplier, Product, Quantity Purchased, Unit Cost, Total Cost, Last Purchase Date
+- Grouped by supplier with subtotals
+- Grand total at bottom
+- Generic mode (no date): all-time purchase history
+- Also shows: supplier with best price per product (highlighted)
+- Print
+- **Deliverable:** `/financial/supplier-expenses` — where is the money going for stock
+
+---
+
+### TASK-F08: Commission Report
+
+- Livewire: `Financial\CommissionReport`
+- Route: `/financial/commissions`
+- Filters: Date From, Date To (default: current month), Sale Man (optional)
+- Table: Sale Man, Total Sales (count), Total Sale Amount, Commission %, Commission Amount
+- Detail view: per sale man shows each sale (Acc#, Date, Customer, Amount, Commission)
+- Uses `employees.commission_percent × account.total_amount / 100`
+- Print
+- **Deliverable:** `/financial/commissions` — how much to pay each sale man
+
+---
+
+### TASK-F09: Inventory Valuation Report
+
+- Livewire: `Financial\InventoryValuationReport`
+- Route: `/financial/inventory-valuation`
+- Generic (current snapshot, no date filter)
+- Table: Product, Qty in Stock, Purchase Price, Sale Price, Stock Value (at cost), Stock Value (at sale), Potential Profit
+- Totals: Total stock at cost, total at sale price, total potential profit
+- Highlights products with 0 stock or negative margin
+- Print
+- **Deliverable:** `/financial/inventory-valuation` — what is our stock worth
+
+---
+
+### TASK-F10: Loss & Write-off Report
+
+- Livewire: `Financial\LossReport`
+- Route: `/financial/losses`
+- Filters: Date From, Date To (based on closed_at date)
+- Shows only accounts closed with remaining_amount > 0 at time of closure AND still closed
+- Table: Acc#, Customer, Phone, Close Date, Total, Paid, Written Off (remaining at close), Discount Given, Discount Slip#
+- Accounts reopened after closure: shown separately as "Recovered" with note
+- Totals: Total written off, total discount given
+- Print
+- **Deliverable:** `/financial/losses` — exactly how much money was lost
+
+---
+
+### TASK-F11: Credit & Debit Summary
+
+- Livewire: `Financial\CreditDebitReport`
+- Route: `/financial/credit-debit`
+- Filters: Date From, Date To, Group By (Day/Week/Month)
+- Per period:
+  - **Money In (Debits):** Advances + Installment payments + Manual payments
+  - **Money Out (Credits):** Purchases + Returns + Discounts + Losses
+  - **Net:** In - Out
+- Running cumulative balance
+- Derived from `financial_ledger`
+- Print
+- **Deliverable:** `/financial/credit-debit` — high-level money flow summary
+
+---
+
+### TASK-F12: Purchase Point — Supplier Price Suggestions
 
 - On PurchasePoint, when a product is selected:
   - Show all suppliers who have supplied this product before (from `supplier_products` table)
   - Highlight the lowest-price supplier in green
   - When a supplier is selected, show their last price and last quantity for this product
 - On save, update `supplier_products` table with latest price/date/quantity
-- **Deliverable:** Smart supplier selection with price history
+- **Deliverable:** Smart supplier selection with price history on purchase screen
+
+---
+
+### TASK-F13: Financial Reports Navigation
+
+- Add "Financial" menu to main app nav bar (between Reports and Settings)
+- Dropdown items: Cash Book, Ledger, Profit & Loss, Receivables, Collections, Supplier Expenses, Commissions, Inventory Valuation, Losses, Credit & Debit
+- Add financial report routes under `/financial/*`
+- Financial reports use the report layout (same as operational reports)
+- **Deliverable:** All financial reports accessible from nav
 
 ---
 
@@ -735,21 +859,21 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 
 ## Task Summary by Phase
 
-| Phase          | Tasks       | Focus                                       |
-| -------------- | ----------- | ------------------------------------------- |
-| 1 — Foundation | 001–007     | Setup, models, migrations, helpers          |
-| 2 — Inventory  | 008–011     | Products, stock entry                       |
-| 3 — HR         | 012–013     | Staff management                            |
-| 4 — Customers  | 014–019     | Customer CRUD, account management           |
-| 5 — Sales      | 020–024     | Sale point, returns                         |
-| 6 — Recovery   | 025         | Daily recovery entry                        |
-| 7 — Reports    | 026–035     | Operational reports (9 reports)              |
-| 7B — Financial | 035B–035G   | Financial reports, ledger, supplier pricing |
-| 8 — Problems   | 036         | Defaulter action tracking                   |
-| 9 — Settings   | 037–039     | Config, backup, license                     |
-| 10 — Polish    | 040–047     | UX, validation, consistency                 |
-| 11 — Tests     | 048–050     | Automated testing                           |
-| 12 — Build     | 051–055     | Production build, migration, QA             |
-| 13 — Dashboard | 056–058     | Overview dashboard with widgets             |
+| Phase          | Tasks       | Focus                                                |
+| -------------- | ----------- | ---------------------------------------------------- |
+| 1 — Foundation | 001–007     | Setup, models, migrations, helpers                   |
+| 2 — Inventory  | 008–011     | Products, stock entry                                |
+| 3 — HR         | 012–013     | Staff management                                     |
+| 4 — Customers  | 014–019     | Customer CRUD, account management                    |
+| 5 — Sales      | 020–024     | Sale point, returns                                  |
+| 6 — Recovery   | 025         | Daily recovery entry                                 |
+| 7 — Reports    | 026–035     | Operational reports (9 reports)                       |
+| 7B — Financial | F01–F13     | Ledger, cash book, P&L, receivables, collections, commissions, losses, supplier, inventory valuation |
+| 8 — Problems   | 036         | Defaulter action tracking                            |
+| 9 — Settings   | 037–039     | Config, backup, license                              |
+| 10 — Polish    | 040–047     | UX, validation, consistency                          |
+| 11 — Tests     | 048–050     | Automated testing                                    |
+| 12 — Build     | 051–055     | Production build, migration, QA                      |
+| 13 — Dashboard | 056–058     | Overview dashboard with widgets                      |
 
-**Total: 65 tasks** (55 original + 7 financial + 3 dashboard)
+**Total: 71 tasks** (55 original + 13 financial + 3 dashboard)

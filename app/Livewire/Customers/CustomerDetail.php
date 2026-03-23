@@ -4,6 +4,7 @@ namespace App\Livewire\Customers;
 
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use App\Models\Payment;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -118,6 +119,14 @@ class CustomerDetail extends Component
 
         $account = $this->customer->accounts()->find($accId);
         $account->decrement('remaining_amount', $amount);
+
+        FinancialLedger::record('payment', [
+            'account_id' => $accId,
+            'customer_id' => $this->customer->id,
+            'debit' => $amount,
+            'balance_after' => $account->fresh()->remaining_amount,
+            'description' => ucfirst($txType)." payment Acc#{$accId}",
+        ]);
 
         $this->reset(['payment_account_id', 'payment_amount', 'transaction_type', 'payment_remarks']);
         $this->transaction_type = 'installment';

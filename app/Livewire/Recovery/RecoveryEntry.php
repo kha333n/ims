@@ -4,6 +4,7 @@ namespace App\Livewire\Recovery;
 
 use App\Models\Account;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use App\Models\Payment;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -138,6 +139,15 @@ class RecoveryEntry extends Component
             ]);
 
             $account->decrement('remaining_amount', min($enteredAmount, $account->remaining_amount));
+
+            FinancialLedger::record('recovery', [
+                'account_id' => $accountId,
+                'customer_id' => $account->customer_id,
+                'employee_id' => $this->recovery_man_id,
+                'debit' => $enteredAmount,
+                'balance_after' => $account->fresh()->remaining_amount,
+                'description' => "Recovery collection Acc#{$accountId}".($isDuplicate ? ' (duplicate)' : ''),
+            ]);
 
             $count++;
             $totalAmount += $enteredAmount;

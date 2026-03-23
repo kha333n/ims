@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\AccountItem;
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
@@ -205,7 +206,7 @@ class NewSale extends Component
         $rmName = Employee::find($this->recovery_man_id)?->name;
         $accountId = null;
 
-        DB::transaction(function () use ($totalAmount, $advanceAmount, $discountAmount, $remainingAmount, $installmentAmount, $dayValue, &$accountId) {
+        DB::transaction(function () use ($totalAmount, $advanceAmount, $discountAmount, $remainingAmount, $installmentAmount, $dayValue, &$accountId, $itemNames) {
             $account = Account::create([
                 'customer_id' => $this->customer_id,
                 'sale_man_id' => $this->sale_man_id,
@@ -244,6 +245,25 @@ class NewSale extends Component
                     'payment_date' => $this->sale_date,
                     'collected_by' => $this->sale_man_id,
                     'remarks' => 'Advance at sale',
+                ]);
+            }
+
+            FinancialLedger::record('sale', [
+                'account_id' => $account->id,
+                'customer_id' => $this->customer_id,
+                'debit' => $totalAmount,
+                'balance_after' => $remainingAmount,
+                'description' => "New sale Acc#{$account->id} — {$itemNames}",
+            ]);
+
+            if ($advanceAmount > 0) {
+                FinancialLedger::record('payment', [
+                    'account_id' => $account->id,
+                    'customer_id' => $this->customer_id,
+                    'employee_id' => $this->sale_man_id,
+                    'debit' => $advanceAmount,
+                    'balance_after' => $remainingAmount,
+                    'description' => "Advance payment at sale Acc#{$account->id}",
                 ]);
             }
         });

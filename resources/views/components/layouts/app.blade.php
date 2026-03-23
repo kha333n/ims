@@ -14,9 +14,9 @@
         <div class="flex items-stretch h-10">
 
             {{-- App Brand --}}
-            <div class="flex items-center px-4 bg-navy-900 text-sm font-bold tracking-widest shrink-0">
+            <a href="{{ route('dashboard') }}" class="flex items-center px-4 bg-navy-900 text-sm font-bold tracking-widest shrink-0 hover:bg-navy-800 transition-colors">
                 IMS
-            </div>
+            </a>
 
             {{-- Menus --}}
             @php
@@ -63,6 +63,24 @@
                             ['label' => 'Inventory Status',   'route' => 'reports.inventory'],
                             ['label' => 'Customer Account',   'route' => 'reports.customer'],
                             ['label' => 'Defaulter Report',   'route' => 'reports.defaulters'],
+                        ],
+                    ],
+                    'Financial' => [
+                        'prefixes' => ['financial'],
+                        'items' => [
+                            ['label' => 'Daily Cash Book',       'route' => 'financial.cash-book'],
+                            ['label' => 'Financial Ledger',      'route' => 'financial.ledger'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Profit & Loss',         'route' => 'financial.profit-loss'],
+                            ['label' => 'Credit & Debit',        'route' => 'financial.credit-debit'],
+                            ['label' => 'Collection Performance', 'route' => 'financial.collections'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Receivables (Aging)',   'route' => 'financial.receivables'],
+                            ['label' => 'Losses & Write-offs',  'route' => 'financial.losses'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Supplier Expenses',     'route' => 'financial.supplier-expenses'],
+                            ['label' => 'Commissions',           'route' => 'financial.commissions'],
+                            ['label' => 'Inventory Valuation',   'route' => 'financial.inventory-valuation'],
                         ],
                     ],
                     'Settings' => [
@@ -127,7 +145,6 @@
                 ['label' => 'New Sales',       'route' => 'sales.new',          'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
                 ['label' => 'Recovery Entry',  'route' => 'recovery.entry',     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ['label' => 'New Customer',    'route' => 'customers.create',   'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'],
-                ['label' => 'Main Reports',    'route' => 'reports.index',      'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
             ];
         @endphp
         @foreach ($toolbar as $btn)

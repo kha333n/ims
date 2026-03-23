@@ -5,6 +5,7 @@ namespace App\Livewire\Customers;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Employee;
+use App\Models\FinancialLedger;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -87,13 +88,32 @@ class AccountClosure extends Component
 
         $custName = $this->accountInfo['name'] ?? '';
         $accId = $this->account_id;
+        $remainingAfter = $account->fresh()->remaining_amount;
+
+        FinancialLedger::record('closure', [
+            'account_id' => $accId,
+            'customer_id' => $account->customer_id,
+            'balance_after' => $remainingAfter,
+            'description' => "Account #{$accId} closed".($discount > 0 ? ' with discount '.formatMoney($discount) : ''),
+            'meta' => ['discount' => $discount, 'remaining_at_close' => $remainingAfter, 'discount_slip' => $this->discount_slip],
+        ]);
+
+        if ($remainingAfter > 0) {
+            FinancialLedger::record('loss', [
+                'account_id' => $accId,
+                'customer_id' => $account->customer_id,
+                'credit' => $remainingAfter,
+                'balance_after' => $remainingAfter,
+                'description' => "Write-off Acc#{$accId} — unpaid balance at closure",
+            ]);
+        }
 
         $this->actionSummary = [
             'action' => 'Closed',
             'account_id' => $accId,
             'customer' => $custName,
             'discount' => $discount,
-            'remaining' => max(0, $account->remaining_amount),
+            'remaining' => $remainingAfter,
         ];
 
         $this->reset(['account_id', 'accountInfo', 'discount_amount', 'discount_slip']);
@@ -112,6 +132,14 @@ class AccountClosure extends Component
         $account->update([
             'status' => 'active',
             'closed_at' => null,
+        ]);
+
+        FinancialLedger::record('activation', [
+            'account_id' => $accId,
+            'customer_id' => $account->customer_id,
+            'balance_after' => $account->remaining_amount,
+            'description' => "Account #{$accId} reactivated",
+            'meta' => ['remaining' => $account->remaining_amount],
         ]);
 
         $this->actionSummary = [

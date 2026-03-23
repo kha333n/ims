@@ -6,6 +6,18 @@ use App\Livewire\Customers\AddCustomer;
 use App\Livewire\Customers\CustomerDetail;
 use App\Livewire\Customers\CustomerList;
 use App\Livewire\Customers\InstallmentUpdate;
+use App\Livewire\Customers\ProblemEntry;
+use App\Livewire\Dashboard\Overview;
+use App\Livewire\Financial\CollectionReport as FinancialCollectionReport;
+use App\Livewire\Financial\CommissionReport;
+use App\Livewire\Financial\CreditDebitReport;
+use App\Livewire\Financial\DailyCashBook;
+use App\Livewire\Financial\InventoryValuationReport;
+use App\Livewire\Financial\LedgerReport;
+use App\Livewire\Financial\LossReport;
+use App\Livewire\Financial\ProfitLossReport;
+use App\Livewire\Financial\ReceivablesReport;
+use App\Livewire\Financial\SupplierExpenseReport;
 use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
@@ -22,9 +34,11 @@ use App\Livewire\Reports\ReturnReport;
 use App\Livewire\Reports\SalesmanReport;
 use App\Livewire\Sales\NewSale;
 use App\Livewire\Sales\ReturnPoint;
+use App\Livewire\Settings\AppSettings;
+use App\Livewire\Settings\BackupRestore;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('dashboard'))->name('dashboard');
+Route::get('/', Overview::class)->name('dashboard');
 
 // Inventory
 Route::prefix('inventory')->name('inventory.')->group(function () {
@@ -45,7 +59,7 @@ Route::prefix('customers')->name('customers.')->group(function () {
     Route::get('/closure', AccountClosure::class)->name('closure');
     Route::get('/transfer', AccountTransfer::class)->name('transfer');
     Route::get('/installment-update', InstallmentUpdate::class)->name('installment-update');
-    Route::get('/problems', fn () => view('placeholder', ['title' => 'Problem Entry']))->name('problems');
+    Route::get('/problems', ProblemEntry::class)->name('problems');
     Route::get('/{id}', CustomerDetail::class)->name('show');
 });
 
@@ -74,9 +88,23 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/defaulters', DefaulterReport::class)->name('defaulters');
 });
 
+// Financial Reports
+Route::prefix('financial')->name('financial.')->group(function () {
+    Route::get('/cash-book', DailyCashBook::class)->name('cash-book');
+    Route::get('/ledger', LedgerReport::class)->name('ledger');
+    Route::get('/profit-loss', ProfitLossReport::class)->name('profit-loss');
+    Route::get('/receivables', ReceivablesReport::class)->name('receivables');
+    Route::get('/collections', FinancialCollectionReport::class)->name('collections');
+    Route::get('/supplier-expenses', SupplierExpenseReport::class)->name('supplier-expenses');
+    Route::get('/commissions', CommissionReport::class)->name('commissions');
+    Route::get('/inventory-valuation', InventoryValuationReport::class)->name('inventory-valuation');
+    Route::get('/losses', LossReport::class)->name('losses');
+    Route::get('/credit-debit', CreditDebitReport::class)->name('credit-debit');
+});
+
 // Settings
 Route::prefix('settings')->name('settings.')->group(function () {
-    Route::get('/', fn () => view('placeholder', ['title' => 'Company Settings']))->name('index');
-    Route::get('/backup', fn () => view('placeholder', ['title' => 'Backup & Restore']))->name('backup');
+    Route::get('/', AppSettings::class)->name('index');
+    Route::get('/backup', BackupRestore::class)->name('backup');
     Route::get('/license', fn () => view('placeholder', ['title' => 'License']))->name('license');
 });

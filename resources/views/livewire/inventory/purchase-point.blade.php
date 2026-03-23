@@ -96,19 +96,51 @@
                 @endif
             </div>
 
-            <div>
+            <div class="space-y-4">
                 <div class="bg-white rounded-lg shadow px-5 py-4">
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Stock Information</h2>
                     @if ($stock_product_name)
                         <dl class="space-y-2 text-sm">
                             <div><dt class="text-gray-500">Product</dt><dd class="font-medium text-navy-800">{{ $stock_product_name }}</dd></div>
                             <div><dt class="text-gray-500">Current Stock</dt><dd class="font-medium">{{ number_format($stock_current_qty) }} units</dd></div>
-                            <div><dt class="text-gray-500">Current Price</dt><dd class="font-medium">{{ $stock_current_price }}</dd></div>
+                            <div><dt class="text-gray-500">Sale Price</dt><dd class="font-medium">{{ $stock_current_price }}</dd></div>
                         </dl>
                     @else
                         <p class="text-sm text-gray-400">Select a product to see stock info.</p>
                     @endif
                 </div>
+
+                {{-- Supplier Price Suggestions --}}
+                @if (count($supplierPrices) > 0)
+                    <div class="bg-white rounded-lg shadow px-5 py-4">
+                        <h2 class="text-sm font-bold text-navy-800 mb-3">Supplier Prices</h2>
+                        <div class="space-y-1.5">
+                            @foreach ($supplierPrices as $sp)
+                                <div class="flex items-center justify-between px-3 py-2 rounded text-sm {{ $sp['is_lowest'] ? 'bg-green-50 border border-green-200' : 'bg-gray-50' }}">
+                                    <div>
+                                        <span class="font-medium {{ $sp['is_lowest'] ? 'text-green-700' : 'text-gray-700' }}">{{ $sp['name'] }}</span>
+                                        @if ($sp['is_lowest'])
+                                            <span class="ml-1 text-xs text-green-600 font-medium">Best</span>
+                                        @endif
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-bold tabular-nums {{ $sp['is_lowest'] ? 'text-green-700' : 'text-gray-700' }}">{{ formatMoney($sp['price']) }}</span>
+                                        @if ($sp['last_date'])
+                                            <span class="block text-xs text-gray-400">{{ $sp['last_date'] }}{{ $sp['last_qty'] ? ' · '.$sp['last_qty'].' pcs' : '' }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Selected supplier last info --}}
+                @if ($selectedSupplierLastInfo)
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                        <p class="text-xs text-blue-800">{{ $selectedSupplierLastInfo }}</p>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

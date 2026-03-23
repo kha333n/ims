@@ -17,7 +17,7 @@
         .print-only { display: none; }
     </style>
 </head>
-<body class="h-full bg-content flex flex-col" x-data="{ fullscreen: false }">
+<body class="h-full bg-content flex flex-col" x-data>
 
     {{-- Top bar (hidden in print) --}}
     <div class="no-print bg-navy-800 text-white shrink-0">
@@ -58,12 +58,35 @@
                     @endforeach
                 </div>
             </div>
+            {{-- Financial dropdown --}}
+            <div class="relative" x-data="{ fopen: false }" @mouseenter="fopen = true" @mouseleave="fopen = false">
+                <button class="flex items-center gap-1 text-sm text-gray-200 hover:text-white transition-colors h-10">
+                    Financial
+                    <svg class="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                @php
+                    $finLinks = [
+                        ['route' => 'financial.cash-book', 'label' => 'Daily Cash Book'],
+                        ['route' => 'financial.ledger', 'label' => 'Financial Ledger'],
+                        ['route' => 'financial.profit-loss', 'label' => 'Profit & Loss'],
+                        ['route' => 'financial.credit-debit', 'label' => 'Credit & Debit'],
+                        ['route' => 'financial.collections', 'label' => 'Collections'],
+                        ['route' => 'financial.receivables', 'label' => 'Receivables'],
+                        ['route' => 'financial.losses', 'label' => 'Losses'],
+                        ['route' => 'financial.supplier-expenses', 'label' => 'Supplier Expenses'],
+                        ['route' => 'financial.commissions', 'label' => 'Commissions'],
+                        ['route' => 'financial.inventory-valuation', 'label' => 'Inventory Valuation'],
+                    ];
+                @endphp
+                <div x-show="fopen" x-transition.opacity.duration.150ms class="absolute left-0 top-full z-50 min-w-52 bg-navy-800 border border-navy-700 shadow-2xl py-1" style="display:none;">
+                    @foreach ($finLinks as $fl)
+                        @php $flActive = str_contains($currentPath, str_replace('financial.', 'financial/', $fl['route'])); @endphp
+                        <a href="{{ route($fl['route']) }}" class="block px-4 py-1.5 text-sm whitespace-nowrap {{ $flActive ? 'bg-navy-600 text-white font-medium' : 'text-gray-300 hover:bg-navy-600 hover:text-white' }}">{{ $fl['label'] }}</a>
+                    @endforeach
+                </div>
+            </div>
             <a href="{{ route('dashboard') }}" class="text-sm text-gray-300 hover:text-white transition-colors">Dashboard</a>
             <div class="flex-1"></div>
-            <button x-on:click="fullscreen = !fullscreen" class="text-xs text-gray-300 hover:text-white px-2 py-1 rounded bg-navy-700 hover:bg-navy-600 transition-colors">
-                <span x-show="!fullscreen">Fullscreen</span>
-                <span x-show="fullscreen">Exit Fullscreen</span>
-            </button>
             <button onclick="window.print()" class="text-xs text-white px-3 py-1 rounded bg-green-600 hover:bg-green-500 transition-colors font-medium">
                 Print
             </button>
@@ -77,7 +100,7 @@
     </div>
 
     {{-- Report Content --}}
-    <main class="flex-1 overflow-auto" :class="fullscreen ? 'p-2' : 'p-6'">
+    <main class="flex-1 overflow-auto p-6">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center justify-between mb-4 border-b border-gray-300 pb-2">
                 <h2 class="text-base font-bold text-navy-800">{{ $title ?? 'Report' }}</h2>

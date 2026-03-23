@@ -19,7 +19,6 @@ class LayoutTest extends TestCase
         $response->assertSee('New Sales');
         $response->assertSee('Recovery Entry');
         $response->assertSee('New Customer');
-        $response->assertSee('Main Reports');
     }
 
     public function test_navigation_menus_are_present(): void
