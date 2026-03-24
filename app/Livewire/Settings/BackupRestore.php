@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Settings;
 
-use Illuminate\Support\Facades\File;
+use App\Services\BackupService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -11,56 +11,89 @@ class BackupRestore extends Component
 {
     public ?array $actionSummary = null;
 
+    public bool $showRestoreConfirm = false;
+
+    public ?string $restorePath = null;
+
     public function createBackup(): void
     {
-        $backupDir = storage_path('app/backups');
-        File::ensureDirectoryExists($backupDir);
+        try {
+            $service = app(BackupService::class);
+            $path = $service->createLocalBackup();
+            $filename = basename($path);
+            $size = number_format(filesize($path) / 1024, 1);
 
-        $dbPath = database_path('nativephp.sqlite');
-        if (! File::exists($dbPath)) {
-            $dbPath = database_path('database.sqlite');
+            $this->actionSummary = [
+                'type' => 'success',
+                'title' => 'Backup Created',
+                'message' => "Encrypted backup saved: {$filename} ({$size} KB)",
+            ];
+        } catch (\Throwable $e) {
+            $this->actionSummary = [
+                'type' => 'error',
+                'title' => 'Backup Failed',
+                'message' => $e->getMessage(),
+            ];
         }
+    }
 
-        if (! File::exists($dbPath)) {
-            $this->addError('backup', 'Database file not found.');
+    public function confirmRestore(string $path): void
+    {
+        $this->restorePath = $path;
+        $this->showRestoreConfirm = true;
+    }
 
+    public function restore(): void
+    {
+        if (! $this->restorePath) {
             return;
         }
 
-        $filename = 'backup_'.now()->format('Y-m-d_His').'.sqlite';
-        File::copy($dbPath, "{$backupDir}/{$filename}");
+        try {
+            $service = app(BackupService::class);
+            $service->restoreFromFile($this->restorePath);
 
-        $size = number_format(File::size("{$backupDir}/{$filename}") / 1024, 1);
-        $this->actionSummary = ['action' => 'Backup Created', 'detail' => "{$filename} ({$size} KB)"];
+            $this->showRestoreConfirm = false;
+            $this->restorePath = null;
+
+            $this->actionSummary = [
+                'type' => 'success',
+                'title' => 'Database Restored',
+                'message' => 'Database and files restored successfully. Please restart the application.',
+            ];
+        } catch (\Throwable $e) {
+            $this->showRestoreConfirm = false;
+            $this->restorePath = null;
+
+            $this->actionSummary = [
+                'type' => 'error',
+                'title' => 'Restore Failed',
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
-    public function deleteBackup(string $filename): void
+    public function deleteBackup(string $path): void
     {
-        $path = storage_path("app/backups/{$filename}");
-        if (File::exists($path)) {
-            File::delete($path);
-            $this->actionSummary = ['action' => 'Backup Deleted', 'detail' => $filename];
+        if (file_exists($path)) {
+            unlink($path);
+            $this->actionSummary = [
+                'type' => 'success',
+                'title' => 'Backup Deleted',
+                'message' => basename($path).' has been deleted.',
+            ];
         }
     }
 
     public function render()
     {
-        $backupDir = storage_path('app/backups');
-        $backups = [];
-        if (File::isDirectory($backupDir)) {
-            $files = File::files($backupDir);
-            foreach ($files as $file) {
-                if ($file->getExtension() === 'sqlite') {
-                    $backups[] = [
-                        'name' => $file->getFilename(),
-                        'size' => number_format($file->getSize() / 1024, 1),
-                        'date' => date('d/M/Y H:i', $file->getMTime()),
-                    ];
-                }
-            }
-            usort($backups, fn ($a, $b) => strcmp($b['name'], $a['name']));
-        }
+        $service = app(BackupService::class);
+        $isOverdue = $service->shouldWarn();
 
-        return view('livewire.settings.backup-restore', ['backups' => $backups]);
+        return view('livewire.settings.backup-restore', [
+            'backups' => $service->getLocalBackups(),
+            'lastBackup' => $service->getLastBackupTime(),
+            'isOverdue' => $isOverdue,
+        ]);
     }
 }

@@ -36,7 +36,10 @@ use App\Livewire\Sales\NewSale;
 use App\Livewire\Sales\ReturnPoint;
 use App\Livewire\Settings\AppSettings;
 use App\Livewire\Settings\BackupRestore;
+use App\Livewire\Settings\LicenseSettings;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/license', LicenseSettings::class)->name('license');
 
 Route::get('/', Overview::class)->name('dashboard');
 
@@ -106,5 +109,5 @@ Route::prefix('financial')->name('financial.')->group(function () {
 Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('/', AppSettings::class)->name('index');
     Route::get('/backup', BackupRestore::class)->name('backup');
-    Route::get('/license', fn () => view('placeholder', ['title' => 'License']))->name('license');
+    Route::get('/license', LicenseSettings::class)->name('license');
 });

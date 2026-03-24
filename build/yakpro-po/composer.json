@@ -1,0 +1,12 @@
+{
+    "name": "ims/yakpro",
+    "authors": [
+        {
+            "name": "Usman Khan",
+            "email": "kha333n@gmail.com"
+        }
+    ],
+    "require": {
+        "pmdunggh/yakpro-po": "^1.0"
+    }
+}

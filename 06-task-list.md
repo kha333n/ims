@@ -876,4 +876,44 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 | 12 — Build     | 051–055     | Production build, migration, QA                      |
 | 13 — Dashboard | 056–058     | Overview dashboard with widgets                      |
 
-**Total: 71 tasks** (55 original + 13 financial + 3 dashboard)
+**Total: 75 tasks** (55 original + 13 financial + 3 dashboard + 4 license server)
+
+---
+
+## Phase 14: License Server (Separate Project)
+
+> Build when ready to go live. Until then, dev license keys work offline.
+
+### TASK-LS01: License Server — Laravel API Project
+
+- Separate Laravel project deployed on VPS/shared hosting
+- Database: `licenses` (key, customer, hardware_id, expires_at, is_active), `license_checks` (audit log)
+- API Endpoints: POST `/api/v1/activate`, POST `/api/v1/validate`, POST `/api/v1/deactivate`
+- Activation logic: key + hardware_id binding, one-active-at-a-time
+- HMAC-signed responses so desktop app can verify authenticity
+- **Deliverable:** Working license API with activate/validate/deactivate
+
+### TASK-LS02: License Server — Backup Storage API
+
+- POST `/api/v1/backup/upload-db` — receive encrypted DB backup
+- POST `/api/v1/backup/upload-files` — receive incremental file uploads
+- GET `/api/v1/backup/list` — list backups for a license key
+- GET `/api/v1/backup/download/{id}` — download a specific backup
+- S3-compatible storage backend
+- **Deliverable:** Cloud backup/restore working end-to-end
+
+### TASK-LS03: License Server — Admin Panel
+
+- Simple admin UI: list licenses, create new, revoke, extend expiry
+- View activation history and check logs per license
+- View stored backups per license
+- **Deliverable:** Admin can manage licenses without touching DB
+
+### TASK-LS04: Desktop App — Switch to Live License Server
+
+- Remove `DEV_LICENSES` constant from `LicenseManager.php`
+- Remove dev license activation block from `activate()` method
+- Update `build:production` to strip dev keys again
+- Set `IMS_LICENSE_SERVER_URL` to production server URL
+- Test full flow: activate → use → deactivate → reactivate on different machine
+- **Deliverable:** App fully connected to live license server

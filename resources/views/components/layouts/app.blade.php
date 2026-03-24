@@ -159,10 +159,22 @@
         @endforeach
     </div>
 
+{{-- Cloud Backup Warning Banner --}}
+    @php try { $backupOverdue = app(\App\Services\BackupService::class)->shouldWarn(); } catch (\Throwable) { $backupOverdue = false; } @endphp
+    @if ($backupOverdue)
+        <div class="bg-yellow-400 text-black text-sm font-semibold px-4 py-2 flex items-center gap-2 no-print">
+            <span class="text-lg">&#9888;</span>
+            <span>Cloud backup overdue — connect to internet and <a href="{{ route('settings.backup') }}" class="underline font-bold hover:text-yellow-900">backup now</a></span>
+        </div>
+    @endif
+
     {{-- Main Content Area --}}
     <main class="flex-1 overflow-auto p-4">
         {{ $slot }}
     </main>
+
+    {{-- Background auto-backup poller (every 5 min) --}}
+    <livewire:system.backup-poller />
 
     @livewireScripts
 </body>

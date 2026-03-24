@@ -1,0 +1,41 @@
+<?php
+// yakpro-po configuration for IMS production builds
+
+$conf->obfuscate_string_literal       = true;
+$conf->obfuscate_variable_name        = true;
+$conf->obfuscate_function_name        = false;  // Laravel uses reflection — can't rename functions
+$conf->obfuscate_class_name           = false;  // Laravel resolves classes by name
+$conf->obfuscate_interface_name       = false;
+$conf->obfuscate_trait_name           = false;
+$conf->obfuscate_constant_name        = false;  // Config keys must stay
+$conf->obfuscate_property_name        = false;  // Eloquent $fillable etc must stay
+$conf->obfuscate_method_name          = false;  // Livewire wire:click references methods
+$conf->obfuscate_namespace_name       = false;  // Laravel autoloading needs real namespaces
+$conf->obfuscate_label_name           = true;
+
+$conf->shuffle_stmts                  = true;
+$conf->scramble_mode                  = false;  // Not supported well
+
+$conf->strip_indentation              = true;
+$conf->strip_comment                  = true;
+
+// What we CAN safely obfuscate: local variables and string literals
+// This makes the code much harder to read while keeping Laravel functional
+$conf->obfuscate_loop_statement       = true;
+$conf->obfuscate_if_statement         = true;
+
+// Exclude vendor and blade
+$conf->t_ignore = [
+    'vendor',
+    'node_modules',
+    'resources',
+    'config',
+    'routes',
+    'database',
+    'public',
+    'storage',
+    'tests',
+    'bootstrap',
+    'build',
+    'lang',
+];
