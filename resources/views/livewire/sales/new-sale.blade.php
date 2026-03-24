@@ -38,7 +38,14 @@
                 <div class="bg-white rounded-lg shadow px-5 py-4">
                     <h2 class="text-sm font-bold text-navy-800 mb-3">Customer</h2>
                     <div class="space-y-3">
-                        <x-searchable-select wire-model="customer_id" :options="$customerOpts" label="Party ID" placeholder="Search by ID or name..." :required="true" />
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1" wire:key="customer-select-{{ $customerSelectKey }}">
+                                <x-searchable-select wire-model="customer_id" :options="$customerOpts" label="Party ID" placeholder="Search by ID or name..." :required="true" />
+                            </div>
+                            <button type="button" wire:click="openNewCustomerModal" class="px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors whitespace-nowrap mb-0.5" title="Add New Customer">
+                                + New
+                            </button>
+                        </div>
                         @error('customer_id') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
 
                         @if ($customer_name)
@@ -77,7 +84,7 @@
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid {{ $installment_type === 'daily' ? 'grid-cols-1' : 'grid-cols-2' }} gap-3">
                             @if ($installment_type === 'weekly')
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Day of Week</label>
@@ -92,14 +99,17 @@
                             @elseif ($installment_type === 'monthly')
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Day of Month</label>
-                                    <input wire:model="installment_day" type="number" min="1" max="31" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                                    <select wire:model="installment_day" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                                        <option value="">— Select —</option>
+                                        @for ($d = 1; $d <= 31; $d++)
+                                            <option value="{{ $d }}">{{ $d }}</option>
+                                        @endfor
+                                    </select>
                                     @error('installment_day') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
-                            @else
-                                <div></div>
                             @endif
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Installment Amount (PKR)</label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Per {{ ucfirst($installment_type === 'daily' ? 'day' : ($installment_type === 'weekly' ? 'week' : 'month')) }} Amount (PKR)</label>
                                 <input wire:model.live.debounce.300ms="installment_amount" type="number" step="0.01" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
                                 @error('installment_amount') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
@@ -217,4 +227,55 @@
             </div>
         </div>
     </div>
+
+    {{-- New Customer Modal --}}
+    @if ($showNewCustomerModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" wire:click.self="closeNewCustomerModal">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-bold text-navy-800">Add New Customer</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Customer will be auto-selected after saving.</p>
+                </div>
+                <form wire:submit="saveNewCustomer" class="px-6 py-4 space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                        <input wire:model="new_customer_name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none" autofocus>
+                        @error('new_customer_name') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Father Name</label>
+                            <input wire:model="new_customer_father" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
+                            <input wire:model="new_customer_mobile" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">CNIC</label>
+                            <input wire:model="new_customer_cnic" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Reference</label>
+                            <input wire:model="new_customer_reference" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Home Address</label>
+                        <input wire:model="new_customer_home_address" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Shop Address</label>
+                        <input wire:model="new_customer_shop_address" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" wire:click="closeNewCustomerModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors">Save & Select</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </div>

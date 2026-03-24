@@ -16,6 +16,12 @@ class ReturnPointTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     private function createSaleData(): array
     {
         $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-111']);

@@ -17,6 +17,7 @@ class LicenseAndBackupTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsOwner();
 
         // Clear any persisted license from AppData and Registry
         // so tests start with a clean slate

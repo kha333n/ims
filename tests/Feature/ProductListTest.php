@@ -18,6 +18,12 @@ class ProductListTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     // ── List Tests ─────────────────────────────────────────────────────────────
 
     public function test_product_list_page_loads(): void

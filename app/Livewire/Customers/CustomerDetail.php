@@ -33,6 +33,9 @@ class CustomerDetail extends Component
 
     public string $shop_address = '';
 
+    // Expanded account detail
+    public ?int $expandedAccountId = null;
+
     // Payment form
     public ?int $payment_account_id = null;
 
@@ -48,6 +51,11 @@ class CustomerDetail extends Component
     {
         $this->customer = Customer::findOrFail($id);
         $this->payment_date = now()->format('Y-m-d');
+    }
+
+    public function toggleAccount(int $accountId): void
+    {
+        $this->expandedAccountId = $this->expandedAccountId === $accountId ? null : $accountId;
     }
 
     public function startEdit(): void
@@ -143,7 +151,7 @@ class CustomerDetail extends Component
     public function render()
     {
         $accounts = $this->customer->accounts()
-            ->with(['items.product', 'recoveryMan'])
+            ->with(['items.product', 'recoveryMan', 'saleMan', 'payments.collector', 'returns'])
             ->latest('sale_date')
             ->get();
 

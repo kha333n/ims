@@ -61,6 +61,26 @@ class NewSale extends Component
 
     public ?int $recovery_man_id = null;
 
+    // Force re-render of searchable-select after adding customer
+    public int $customerSelectKey = 0;
+
+    // Quick add customer modal
+    public bool $showNewCustomerModal = false;
+
+    public string $new_customer_name = '';
+
+    public string $new_customer_father = '';
+
+    public string $new_customer_mobile = '';
+
+    public string $new_customer_cnic = '';
+
+    public string $new_customer_home_address = '';
+
+    public string $new_customer_shop_address = '';
+
+    public string $new_customer_reference = '';
+
     // Summary after save
     public ?array $summary = null;
 
@@ -164,6 +184,55 @@ class NewSale extends Component
             'monthly' => 'months',
             default => 'periods',
         };
+    }
+
+    public function openNewCustomerModal(): void
+    {
+        $this->reset([
+            'new_customer_name', 'new_customer_father', 'new_customer_mobile',
+            'new_customer_cnic', 'new_customer_home_address', 'new_customer_shop_address',
+            'new_customer_reference',
+        ]);
+        $this->showNewCustomerModal = true;
+    }
+
+    public function closeNewCustomerModal(): void
+    {
+        $this->showNewCustomerModal = false;
+    }
+
+    public function saveNewCustomer(): void
+    {
+        $this->validate([
+            'new_customer_name' => 'required|string|max:255',
+            'new_customer_father' => 'nullable|string|max:255',
+            'new_customer_mobile' => 'nullable|string|max:20',
+            'new_customer_cnic' => 'nullable|string|max:20',
+            'new_customer_home_address' => 'nullable|string|max:500',
+            'new_customer_shop_address' => 'nullable|string|max:500',
+            'new_customer_reference' => 'nullable|string|max:255',
+        ]);
+
+        $customer = Customer::create([
+            'name' => $this->new_customer_name,
+            'father_name' => $this->new_customer_father ?: null,
+            'mobile' => $this->new_customer_mobile ?: null,
+            'cnic' => $this->new_customer_cnic ?: null,
+            'home_address' => $this->new_customer_home_address ?: null,
+            'shop_address' => $this->new_customer_shop_address ?: null,
+            'reference' => $this->new_customer_reference ?: null,
+        ]);
+
+        // Auto-select the new customer
+        $this->customer_id = $customer->id;
+        $this->customer_name = $customer->name;
+        $this->customer_father = $customer->father_name;
+        $this->customer_mobile = $customer->mobile;
+        $this->customer_address = $customer->home_address;
+        $this->customer_reference = $customer->reference;
+
+        $this->showNewCustomerModal = false;
+        $this->customerSelectKey++;
     }
 
     public function dismissSummary(): void

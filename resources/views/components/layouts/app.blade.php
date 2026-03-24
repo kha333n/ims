@@ -24,36 +24,39 @@
                 $menus = [
                     'Items' => [
                         'prefixes' => ['inventory'],
+                        'permission' => 'products.view',
                         'items' => [
                             ['label' => 'Product List',  'route' => 'inventory.products'],
-                            ['label' => 'Suppliers',     'route' => 'inventory.suppliers'],
-                            ['label' => 'New Purchase',  'route' => 'inventory.purchase'],
+                            ['label' => 'Suppliers',     'route' => 'inventory.suppliers', 'permission' => 'suppliers.manage'],
+                            ['label' => 'New Purchase',  'route' => 'inventory.purchase', 'permission' => 'purchases.manage'],
                         ],
                     ],
                     'Management' => [
                         'prefixes' => ['customers', 'sales', 'hr'],
                         'items' => [
-                            ['label' => 'Customers',          'route' => 'customers.index'],
-                            ['label' => 'New Sale',           'route' => 'sales.new'],
-                            ['label' => 'Return Point',       'route' => 'sales.return'],
+                            ['label' => 'Customers',          'route' => 'customers.index', 'permission' => 'customers.view'],
+                            ['label' => 'New Sale',           'route' => 'sales.new', 'permission' => 'sales.create'],
+                            ['label' => 'Return Point',       'route' => 'sales.return', 'permission' => 'returns.manage'],
                             ['label' => '---', 'route' => ''],
-                            ['label' => 'Sale Men',           'route' => 'hr.sale-men'],
-                            ['label' => 'Recovery Men',       'route' => 'hr.recovery-men'],
+                            ['label' => 'Sale Men',           'route' => 'hr.sale-men', 'permission' => 'users.manage'],
+                            ['label' => 'Recovery Men',       'route' => 'hr.recovery-men', 'permission' => 'users.manage'],
                             ['label' => '---', 'route' => ''],
-                            ['label' => 'Account Closure',    'route' => 'customers.closure'],
-                            ['label' => 'Account Transfer',   'route' => 'customers.transfer'],
-                            ['label' => 'Installment Update', 'route' => 'customers.installment-update'],
-                            ['label' => 'Problem Entry',      'route' => 'customers.problems'],
+                            ['label' => 'Account Closure',    'route' => 'customers.closure', 'permission' => 'accounts.close'],
+                            ['label' => 'Account Transfer',   'route' => 'customers.transfer', 'permission' => 'accounts.transfer'],
+                            ['label' => 'Installment Update', 'route' => 'customers.installment-update', 'permission' => 'installments.update'],
+                            ['label' => 'Problem Entry',      'route' => 'customers.problems', 'permission' => 'accounts.close'],
                         ],
                     ],
                     'Recovery' => [
                         'prefixes' => ['recovery'],
+                        'permission' => 'recovery.entry',
                         'items' => [
                             ['label' => 'Recovery Entry', 'route' => 'recovery.entry'],
                         ],
                     ],
                     'Reports' => [
                         'prefixes' => ['reports'],
+                        'permission' => 'reports.view',
                         'items' => [
                             ['label' => 'Item Sale Report',   'route' => 'reports.item-sales'],
                             ['label' => 'Item Detail Report', 'route' => 'reports.item-detail'],
@@ -68,6 +71,7 @@
                     ],
                     'Financial' => [
                         'prefixes' => ['financial'],
+                        'permission' => 'financial.view',
                         'items' => [
                             ['label' => 'Daily Cash Book',       'route' => 'financial.cash-book'],
                             ['label' => 'Financial Ledger',      'route' => 'financial.ledger'],
@@ -86,10 +90,12 @@
                     ],
                     'Settings' => [
                         'prefixes' => ['settings'],
+                        'permission' => 'settings.manage',
                         'items' => [
                             ['label' => 'Company Settings', 'route' => 'settings.index'],
                             ['label' => 'Backup & Restore', 'route' => 'settings.backup'],
                             ['label' => 'License',          'route' => 'settings.license'],
+                            ['label' => 'User Management',  'route' => 'settings.users', 'permission' => 'users.manage'],
                         ],
                     ],
                 ];
@@ -97,8 +103,11 @@
 
             @foreach ($menus as $label => $menu)
                 @php
+                    $menuPerm = $menu['permission'] ?? null;
+                    $canSeeMenu = !$menuPerm || !auth()->check() || auth()->user()->can($menuPerm);
                     $isActive = collect($menu['prefixes'])->contains(fn($p) => str_starts_with($path, $p));
                 @endphp
+                @if ($canSeeMenu)
                 <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                     <button class="flex items-center h-full px-4 text-sm font-medium transition-colors gap-1
                                    {{ $isActive ? 'bg-navy-600 text-white' : 'text-gray-200 hover:bg-navy-700 hover:text-white' }}">
@@ -116,7 +125,7 @@
                         @foreach ($menu['items'] as $item)
                             @if ($item['label'] === '---')
                                 <div class="my-1 border-t border-navy-700"></div>
-                            @else
+                            @elseif (!isset($item['permission']) || !auth()->check() || auth()->user()->can($item['permission']))
                                 <a href="{{ route($item['route']) }}"
                                    class="block px-4 py-1.5 text-sm text-gray-300 hover:bg-navy-600 hover:text-white whitespace-nowrap">
                                     {{ $item['label'] }}
@@ -125,16 +134,42 @@
                         @endforeach
                     </div>
                 </div>
+                @endif
             @endforeach
 
             <div class="flex-1"></div>
 
             {{-- Clock --}}
-            <div class="flex items-center px-4 text-xs text-gray-400 tabular-nums"
+            <div class="flex items-center px-3 text-xs text-gray-400 tabular-nums"
                  x-data="{ t: '' }"
                  x-init="setInterval(() => t = new Date().toLocaleTimeString('en-GB'), 1000)">
                 <span x-text="t"></span>
             </div>
+
+            {{-- User Menu --}}
+            @auth
+                <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                    <button class="flex items-center h-full px-3 text-xs text-gray-300 hover:bg-navy-700 hover:text-white transition-colors gap-1.5">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span>{{ auth()->user()->name }}</span>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.100ms
+                         class="absolute right-0 top-full z-50 min-w-40 bg-navy-800 border border-navy-700 shadow-2xl py-1"
+                         style="display:none;">
+                        <a href="{{ route('profile') }}" class="block px-4 py-1.5 text-sm text-gray-300 hover:bg-navy-600 hover:text-white">Profile</a>
+                        @can('users.manage')
+                            <a href="{{ route('settings.users') }}" class="block px-4 py-1.5 text-sm text-gray-300 hover:bg-navy-600 hover:text-white">User Management</a>
+                        @endcan
+                        <div class="my-1 border-t border-navy-700"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="w-full text-left px-4 py-1.5 text-sm text-gray-300 hover:bg-navy-600 hover:text-white">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            @endauth
         </div>
     </nav>
 
@@ -142,13 +177,14 @@
     <div class="no-print bg-toolbar shrink-0 flex items-center gap-1 px-2 py-1 border-b border-navy-900">
         @php
             $toolbar = [
-                ['label' => 'New Purchases',  'route' => 'inventory.purchase', 'icon' => 'M12 4v16m8-8H4'],
-                ['label' => 'New Sales',       'route' => 'sales.new',          'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
-                ['label' => 'Recovery Entry',  'route' => 'recovery.entry',     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-                ['label' => 'New Customer',    'route' => 'customers.create',   'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'],
+                ['label' => 'New Purchases',  'route' => 'inventory.purchase', 'icon' => 'M12 4v16m8-8H4', 'permission' => 'purchases.manage'],
+                ['label' => 'New Sales',       'route' => 'sales.new',          'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'permission' => 'sales.create'],
+                ['label' => 'Recovery Entry',  'route' => 'recovery.entry',     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'permission' => 'recovery.entry'],
+                ['label' => 'New Customer',    'route' => 'customers.create',   'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', 'permission' => 'customers.manage'],
             ];
         @endphp
         @foreach ($toolbar as $btn)
+            @if (!auth()->check() || auth()->user()->can($btn['permission']))
             <a href="{{ route($btn['route']) }}"
                class="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
                       bg-navy-700 hover:bg-navy-500 text-gray-200 hover:text-white transition-colors">
@@ -157,6 +193,7 @@
                 </svg>
                 {{ $btn['label'] }}
             </a>
+            @endif
         @endforeach
     </div>
 

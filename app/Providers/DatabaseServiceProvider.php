@@ -50,6 +50,7 @@ class DatabaseServiceProvider extends ServiceProvider
     {
         if ($isNewDb) {
             Artisan::call('migrate', ['--force' => true, '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true, '--no-interaction' => true]);
 
             return;
         }

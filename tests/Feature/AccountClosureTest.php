@@ -14,6 +14,12 @@ class AccountClosureTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     private function createActiveAccount(): array
     {
         $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-111']);

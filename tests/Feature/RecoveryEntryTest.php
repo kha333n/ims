@@ -15,6 +15,12 @@ class RecoveryEntryTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     private function createRecoveryData(string $type = 'daily'): array
     {
         $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-111', 'cnic' => '12345-1234567-1']);

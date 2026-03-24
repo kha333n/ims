@@ -23,8 +23,12 @@
         <div class="bg-white rounded-lg shadow px-6 py-5 space-y-4">
             <div class="grid grid-cols-3 gap-4">
                 <x-searchable-select wire-model="recovery_man_id" :options="$rmOpts" label="Recovery Man" placeholder="Search RM..." />
-                <x-searchable-select wire-model="customer_id" :options="$custOpts" label="Customer" placeholder="Search customer..." :disabled="!$recovery_man_id" />
-                <x-searchable-select wire-model="account_id" :options="$accOpts" label="Account #" placeholder="Search account..." :disabled="!$customer_id" />
+                <div wire:key="cust-select-{{ $recovery_man_id }}">
+                    <x-searchable-select wire-model="customer_id" :options="$custOpts" label="Customer" placeholder="Search customer..." :disabled="!$recovery_man_id" />
+                </div>
+                <div wire:key="acc-select-{{ $customer_id }}">
+                    <x-searchable-select wire-model="account_id" :options="$accOpts" label="Account #" placeholder="Search account..." :disabled="!$customer_id" />
+                </div>
             </div>
 
             @if ($accountInfo)

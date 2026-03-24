@@ -9,6 +9,12 @@ class LayoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     public function test_dashboard_loads(): void
     {
         $response = $this->get('/');

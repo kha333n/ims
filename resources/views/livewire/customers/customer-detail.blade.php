@@ -123,8 +123,12 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse ($accounts as $account)
-                                <tr class="hover:bg-blue-50 transition-colors" wire:key="acc-{{ $account->id }}">
-                                    <td class="px-4 py-2 font-medium text-navy-800">{{ $account->id }}</td>
+                                <tr class="hover:bg-blue-50 transition-colors cursor-pointer {{ $expandedAccountId === $account->id ? 'bg-blue-50' : '' }}"
+                                    wire:click="toggleAccount({{ $account->id }})" wire:key="acc-{{ $account->id }}">
+                                    <td class="px-4 py-2 font-medium text-navy-800">
+                                        <span class="text-gray-400 mr-1">{{ $expandedAccountId === $account->id ? '▼' : '▶' }}</span>
+                                        {{ $account->id }}
+                                    </td>
                                     <td class="px-4 py-2 text-gray-600">
                                         {{ $account->items->pluck('product.name')->filter()->join(', ') ?: '—' }}
                                     </td>
@@ -140,6 +144,149 @@
                                     </td>
                                     <td class="px-4 py-2 text-gray-600">{{ $account->recoveryMan?->name ?? '—' }}</td>
                                 </tr>
+
+                                {{-- Expanded Account Detail --}}
+                                @if ($expandedAccountId === $account->id)
+                                    <tr wire:key="acc-detail-{{ $account->id }}">
+                                        <td colspan="7" class="px-0 py-0 bg-gray-50">
+                                            <div class="px-6 py-4 space-y-4">
+                                                {{-- Account Info --}}
+                                                <div class="grid grid-cols-4 gap-4 text-xs">
+                                                    <div>
+                                                        <span class="text-gray-500">Sale Date</span>
+                                                        <p class="font-medium">@date($account->sale_date)</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Sale Man</span>
+                                                        <p class="font-medium">{{ $account->saleMan?->name ?? '—' }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Recovery Man</span>
+                                                        <p class="font-medium">{{ $account->recoveryMan?->name ?? '—' }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Installment</span>
+                                                        <p class="font-medium">{{ ucfirst($account->installment_type ?? '—') }} — @money($account->installment_amount)</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Slip #</span>
+                                                        <p class="font-medium">{{ $account->slip_number ?? '—' }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Discount</span>
+                                                        <p class="font-medium">@money($account->discount_amount)</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Total Paid</span>
+                                                        <p class="font-medium text-green-600">@money($account->total_paid)</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-500">Remaining</span>
+                                                        <p class="font-medium {{ $account->remaining_amount > 0 ? 'text-red-600' : 'text-green-600' }}">@money($account->remaining_amount)</p>
+                                                    </div>
+                                                </div>
+
+                                                {{-- Items --}}
+                                                <div>
+                                                    <h4 class="text-xs font-bold text-navy-800 mb-2">Items</h4>
+                                                    <table class="w-full text-xs">
+                                                        <thead class="bg-white">
+                                                            <tr class="border-b">
+                                                                <th class="py-1.5 text-left font-medium text-gray-500">Product</th>
+                                                                <th class="py-1.5 text-right font-medium text-gray-500">Qty</th>
+                                                                <th class="py-1.5 text-right font-medium text-gray-500">Unit Price</th>
+                                                                <th class="py-1.5 text-right font-medium text-gray-500">Subtotal</th>
+                                                                <th class="py-1.5 text-center font-medium text-gray-500">Returned</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-gray-100">
+                                                            @foreach ($account->items as $item)
+                                                                <tr>
+                                                                    <td class="py-1.5">{{ $item->product?->name ?? '—' }}</td>
+                                                                    <td class="py-1.5 text-right tabular-nums">{{ $item->quantity }}</td>
+                                                                    <td class="py-1.5 text-right tabular-nums">@money($item->unit_price)</td>
+                                                                    <td class="py-1.5 text-right tabular-nums">@money($item->subtotal)</td>
+                                                                    <td class="py-1.5 text-center">
+                                                                        @if ($item->returned)
+                                                                            <span class="text-red-500 font-medium">Yes</span>
+                                                                        @else
+                                                                            <span class="text-gray-400">No</span>
+                                                                        @endif
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                {{-- Payment History --}}
+                                                <div>
+                                                    <h4 class="text-xs font-bold text-navy-800 mb-2">Payment History ({{ $account->payments->count() }})</h4>
+                                                    @if ($account->payments->isNotEmpty())
+                                                        <div class="max-h-60 overflow-y-auto">
+                                                            <table class="w-full text-xs">
+                                                                <thead class="bg-white sticky top-0">
+                                                                    <tr class="border-b">
+                                                                        <th class="py-1.5 text-left font-medium text-gray-500">Date</th>
+                                                                        <th class="py-1.5 text-right font-medium text-gray-500">Amount</th>
+                                                                        <th class="py-1.5 text-left font-medium text-gray-500">Type</th>
+                                                                        <th class="py-1.5 text-left font-medium text-gray-500">Collected By</th>
+                                                                        <th class="py-1.5 text-left font-medium text-gray-500">Remarks</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody class="divide-y divide-gray-100">
+                                                                    @foreach ($account->payments->sortByDesc('payment_date') as $payment)
+                                                                        <tr>
+                                                                            <td class="py-1.5">@date($payment->payment_date)</td>
+                                                                            <td class="py-1.5 text-right tabular-nums font-medium text-green-600">@money($payment->amount)</td>
+                                                                            <td class="py-1.5">
+                                                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium
+                                                                                    {{ $payment->transaction_type === 'advance' ? 'bg-blue-100 text-blue-700' : ($payment->transaction_type === 'manual' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700') }}">
+                                                                                    {{ ucfirst($payment->transaction_type) }}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td class="py-1.5 text-gray-600">{{ $payment->collector?->name ?? '—' }}</td>
+                                                                            <td class="py-1.5 text-gray-500">{{ $payment->remarks ?? '—' }}</td>
+                                                                        </tr>
+                                                                    @endforeach
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    @else
+                                                        <p class="text-xs text-gray-400">No payments recorded.</p>
+                                                    @endif
+                                                </div>
+
+                                                {{-- Returns --}}
+                                                @if ($account->returns->isNotEmpty())
+                                                    <div>
+                                                        <h4 class="text-xs font-bold text-red-700 mb-2">Returns ({{ $account->returns->count() }})</h4>
+                                                        <table class="w-full text-xs">
+                                                            <thead class="bg-white">
+                                                                <tr class="border-b">
+                                                                    <th class="py-1.5 text-left font-medium text-gray-500">Date</th>
+                                                                    <th class="py-1.5 text-right font-medium text-gray-500">Qty</th>
+                                                                    <th class="py-1.5 text-right font-medium text-gray-500">Amount</th>
+                                                                    <th class="py-1.5 text-left font-medium text-gray-500">Reason</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="divide-y divide-gray-100">
+                                                                @foreach ($account->returns->sortByDesc('return_date') as $return)
+                                                                    <tr>
+                                                                        <td class="py-1.5">@date($return->return_date)</td>
+                                                                        <td class="py-1.5 text-right tabular-nums">{{ $return->quantity }}</td>
+                                                                        <td class="py-1.5 text-right tabular-nums text-red-600">@money($return->returning_amount)</td>
+                                                                        <td class="py-1.5 text-gray-600">{{ $return->reason ?? '—' }}</td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
                             @empty
                                 <tr>
                                     <td colspan="7" class="px-4 py-8 text-center text-gray-400">No accounts found.</td>

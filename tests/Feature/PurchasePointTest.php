@@ -13,6 +13,12 @@ class PurchasePointTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     public function test_purchase_point_page_loads(): void
     {
         $response = $this->get(route('inventory.purchase'));

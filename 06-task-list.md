@@ -917,3 +917,28 @@ Tasks are ordered by dependency. Complete each task fully before moving to the n
 - Set `IMS_LICENSE_SERVER_URL` to production server URL
 - Test full flow: activate → use → deactivate → reactivate on different machine
 - **Deliverable:** App fully connected to live license server
+
+### TASK-LS05: License Server — Support Code Generator
+
+- Admin endpoint to generate support reset codes: `HMAC(hardware_id | date_hour, license_key)`
+- Support staff enters hardware ID (provided by user) → gets 12-char code valid for 1 hour
+- License key lookup from admin panel (user never sees their license key directly)
+- The desktop app already implements `ResetPassword` with support code verification
+- **Deliverable:** Support team can reset admin passwords remotely without accessing the machine
+
+### TASK-LS06: License Server — Online Portal for Customers
+
+- Customer-facing portal: view license status, expiry, hardware info
+- View/download cloud backups
+- License key visible only in the portal (hidden in the desktop app)
+- Password reset via portal (alternative to support code)
+- **Deliverable:** Customers can manage their license and backups online
+
+### TASK-059: Dashboard Overview Widgets (Final)
+
+- Populate dashboard with real data widgets once all features are complete
+- Today's collections, pending collections, overdue accounts
+- Monthly revenue trend, top recovery men performance
+- Quick stats: total active accounts, total remaining receivable, inventory value
+- Recent activity feed (last 10 actions from financial ledger)
+- **Deliverable:** Dashboard shows complete business overview

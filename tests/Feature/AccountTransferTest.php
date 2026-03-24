@@ -14,6 +14,12 @@ class AccountTransferTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsOwner();
+    }
+
     public function test_page_loads(): void
     {
         $this->get(route('customers.transfer'))
