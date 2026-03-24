@@ -1,5 +1,6 @@
 <?php
-// yakpro-po configuration for IMS production builds
+// YAK Pro - Php Obfuscator: Config File
+// Do not delete the previous line! it's a magic string for config file!
 
 $conf->obfuscate_string_literal       = true;
 $conf->obfuscate_variable_name        = true;
@@ -17,25 +18,3 @@ $conf->shuffle_stmts                  = true;
 $conf->scramble_mode                  = false;  // Not supported well
 
 $conf->strip_indentation              = true;
-$conf->strip_comment                  = true;
-
-// What we CAN safely obfuscate: local variables and string literals
-// This makes the code much harder to read while keeping Laravel functional
-$conf->obfuscate_loop_statement       = true;
-$conf->obfuscate_if_statement         = true;
-
-// Exclude vendor and blade
-$conf->t_ignore = [
-    'vendor',
-    'node_modules',
-    'resources',
-    'config',
-    'routes',
-    'database',
-    'public',
-    'storage',
-    'tests',
-    'bootstrap',
-    'build',
-    'lang',
-];

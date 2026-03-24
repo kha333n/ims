@@ -7,7 +7,6 @@ use Illuminate\Console\Command;
 class BuildProduction extends Command
 {
     protected $signature = 'build:production
-        {--skip-obfuscate : Skip PHP obfuscation}
         {--skip-build : Only prepare staging dir, do not run native:build}
         {--skip-tests : Skip running test suite}';
 
@@ -27,7 +26,13 @@ class BuildProduction extends Command
         // Step 1: Run tests on the original source
         if (! $this->option('skip-tests')) {
             $this->step('1/8', 'Running test suite');
-            if ($this->runProcess('php artisan test --compact') !== 0) {
+            $testEnv = 'APP_ENV=testing';
+            if (DIRECTORY_SEPARATOR === '\\') {
+                $testEnv = 'set APP_ENV=testing&&';
+            } else {
+                $testEnv = 'APP_ENV=testing';
+            }
+            if ($this->runProcess($testEnv.' php artisan test --compact') !== 0) {
                 $this->error('Tests failed! Fix tests before building.');
 
                 return self::FAILURE;
@@ -44,24 +49,19 @@ class BuildProduction extends Command
         $this->step('3/8', 'Creating staging copy');
         $this->createStagingCopy();
 
-        // Step 4: Obfuscate PHP source in staging
-        if (! $this->option('skip-obfuscate')) {
-            $this->step('4/8', 'Obfuscating PHP source in staging');
-            $this->obfuscateStaging();
-        } else {
-            $this->step('4/8', 'Skipping obfuscation (--skip-obfuscate)');
-        }
+        // Step 4: Obfuscation disabled — integrity check is the protection layer
+        $this->step('4/8', 'Skipping obfuscation (integrity check enforced instead)');
 
-        // Step 5: Generate integrity manifest in staging
-        $this->step('5/8', 'Generating integrity manifest');
-        $this->generateIntegrityInStaging();
-
-        // Step 6: Remove dev files from staging
-        $this->step('6/8', 'Cleaning non-production files');
+        // Step 5: Remove dev files from staging
+        $this->step('5/8', 'Cleaning non-production files');
         $this->cleanStaging();
 
-        // Step 7: Dev license keys kept until license server is built
-        $this->step('7/8', 'Dev license keys: KEPT (no license server yet)');
+        // Step 6: Dev license keys kept until license server is built
+        $this->step('6/8', 'Dev license keys: KEPT (no license server yet)');
+
+        // Step 7: Generate integrity manifest LAST (on final files)
+        $this->step('7/8', 'Generating integrity manifest');
+        $this->generateIntegrityInStaging();
         // TODO: When license server is ready, uncomment:
         // $this->removeDevLicenses();
 
@@ -245,31 +245,23 @@ class BuildProduction extends Command
 
     private function generateIntegrityInStaging(): void
     {
-        // Run integrity:generate in staging context
-        // Since we can't easily change base_path, we'll generate the manifest manually
-        $dirs = [
-            $this->stagingDir.'/app/Services',
-            $this->stagingDir.'/app/Http/Middleware',
-            $this->stagingDir.'/app/Models',
-            $this->stagingDir.'/app/Livewire',
+        // Only hash the critical security files — must match IntegrityChecker::CRITICAL_FILES
+        $criticalFiles = [
+            'app/Http/Middleware/SubscriptionGate.php',
+            'app/Services/LicenseManager.php',
+            'app/Services/HardwareFingerprint.php',
+            'app/Services/IntegrityChecker.php',
+            'app/Services/BackupService.php',
+            'app/Services/DatabaseEncryption.php',
+            'app/Livewire/Settings/LicenseSettings.php',
+            'bootstrap/app.php',
         ];
 
         $hashes = [];
-        foreach ($dirs as $dir) {
-            if (! is_dir($dir)) {
-                continue;
-            }
-
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)
-            );
-
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php') {
-                    $relativePath = str_replace($this->stagingDir.DIRECTORY_SEPARATOR, '', $file->getPathname());
-                    $relativePath = str_replace('\\', '/', $relativePath);
-                    $hashes[$relativePath] = hash_file('sha256', $file->getPathname());
-                }
+        foreach ($criticalFiles as $relativePath) {
+            $fullPath = $this->stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            if (file_exists($fullPath)) {
+                $hashes[$relativePath] = hash_file('sha256', $fullPath);
             }
         }
 
@@ -278,7 +270,7 @@ class BuildProduction extends Command
         $signature = hash_hmac('sha256', $data, config('ims.app_secret'));
 
         file_put_contents($this->stagingDir.'/integrity.bin', $signature."\n".$data);
-        $this->line('  Integrity manifest generated ('.count($hashes).' files hashed).');
+        $this->line('  Integrity manifest generated ('.count($hashes).' critical files hashed).');
     }
 
     private function cleanStaging(): void

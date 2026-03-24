@@ -76,20 +76,40 @@ class LicenseManager
 
         // Check for dev/test licenses (local activation, no server needed)
         if (isset(self::DEV_LICENSES[$key])) {
-            $dev = self::DEV_LICENSES[$key];
-            $licenseData = [
-                'key' => $key,
-                'hardware_id' => $hardwareId,
-                'customer_name' => $dev['customer_name'],
-                'activated_at' => now()->toIso8601String(),
-                'expires_at' => now()->addDays($dev['days'])->toDateString(),
-                'last_verified_online' => now()->toIso8601String(),
-            ];
+            // Check if this key was previously activated on this hardware
+            $previousActivation = $this->getPreviousDevActivation($key, $hardwareId);
+
+            if ($previousActivation) {
+                // Key was used before — use original expiry, don't grant fresh days
+                if (now()->isAfter($previousActivation['expires_at'])) {
+                    return ['success' => false, 'message' => 'This license key has expired and cannot be reactivated.'];
+                }
+
+                // Still valid — restore with original expiry
+                $licenseData = $previousActivation;
+                $licenseData['last_verified_online'] = now()->toIso8601String();
+            } else {
+                // First-time activation
+                $dev = self::DEV_LICENSES[$key];
+                $licenseData = [
+                    'key' => $key,
+                    'hardware_id' => $hardwareId,
+                    'customer_name' => $dev['customer_name'],
+                    'activated_at' => now()->toIso8601String(),
+                    'expires_at' => now()->addDays($dev['days'])->toDateString(),
+                    'last_verified_online' => now()->toIso8601String(),
+                ];
+
+                // Store permanent activation record in AppData (survives uninstall)
+                $this->storeDevActivation($key, $hardwareId, $licenseData);
+            }
 
             $this->storeLicense($licenseData);
             $this->licenseData = $licenseData;
 
-            return ['success' => true, 'message' => "Dev license activated — expires in {$dev['days']} days"];
+            $daysLeft = (int) now()->diffInDays($licenseData['expires_at'], false);
+
+            return ['success' => true, 'message' => "Dev license activated — expires in {$daysLeft} days"];
         }
 
         $serverUrl = config('ims.license.server_url');
@@ -469,5 +489,99 @@ class LicenseManager
         }
 
         return substr($key, 0, 4).'••••'.substr($key, -4);
+    }
+
+    // ── Dev License Activation Persistence ──────────────────
+    // Stored in AppData as a separate file that survives uninstall.
+    // Prevents reuse of expired test keys by reinstalling.
+
+    private const DEV_ACTIVATIONS_FILE = 'dev_activations.enc';
+
+    /**
+     * Check if a dev key was previously activated on this hardware.
+     */
+    private function getPreviousDevActivation(string $key, string $hardwareId): ?array
+    {
+        $activations = $this->readDevActivations();
+
+        $lookupKey = hash('sha256', $key.'|'.$hardwareId);
+
+        return $activations[$lookupKey] ?? null;
+    }
+
+    /**
+     * Store a permanent record that this dev key was activated.
+     */
+    private function storeDevActivation(string $key, string $hardwareId, array $licenseData): void
+    {
+        $activations = $this->readDevActivations();
+
+        $lookupKey = hash('sha256', $key.'|'.$hardwareId);
+        $activations[$lookupKey] = $licenseData;
+
+        $this->writeDevActivations($activations);
+
+        // Also store in Registry as a backup
+        $this->writeDevActivationsToRegistry($activations);
+    }
+
+    private function readDevActivations(): array
+    {
+        // Try AppData first
+        $path = $this->getAppDataPath().'\\'.self::DEV_ACTIVATIONS_FILE;
+        if (file_exists($path)) {
+            $data = $this->decrypt(file_get_contents($path));
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        // Try Registry
+        if (PHP_OS_FAMILY === 'Windows') {
+            try {
+                $output = [];
+                exec('reg query "'.self::REGISTRY_PATH.'" /v dev_activations 2>NUL', $output, $code);
+                if ($code === 0) {
+                    foreach ($output as $line) {
+                        if (str_contains($line, 'dev_activations') && str_contains($line, 'REG_SZ')) {
+                            $parts = preg_split('/\s+/', trim($line), 3);
+                            $data = $this->decrypt($parts[2] ?? '');
+                            if (is_array($data)) {
+                                return $data;
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        return [];
+    }
+
+    private function writeDevActivations(array $activations): void
+    {
+        $dir = $this->getAppDataPath();
+        if (! is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
+
+        file_put_contents(
+            $dir.'\\'.self::DEV_ACTIVATIONS_FILE,
+            $this->encrypt($activations)
+        );
+    }
+
+    private function writeDevActivationsToRegistry(array $activations): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return;
+        }
+
+        try {
+            $encrypted = $this->encrypt($activations);
+            exec('reg add "'.self::REGISTRY_PATH.'" /v dev_activations /t REG_SZ /d "'.$encrypted.'" /f 2>NUL');
+        } catch (\Throwable) {
+        }
     }
 }

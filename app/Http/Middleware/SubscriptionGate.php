@@ -27,8 +27,8 @@ class SubscriptionGate
             return $next($request);
         }
 
-        // Allow Livewire update requests (they handle their own component context)
-        if ($request->is('livewire/*') || $request->is('livewire/update')) {
+        // Allow Livewire update requests (NativePHP adds a hash to the path: livewire-XXXX/update)
+        if ($request->is('livewire/*') || $request->is('livewire-*/update') || $request->is('livewire/update')) {
             return $next($request);
         }
 

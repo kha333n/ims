@@ -7,6 +7,7 @@
         }
     ],
     "require": {
-        "pmdunggh/yakpro-po": "^1.0"
+        "pmdunggh/yakpro-po": "^1.0",
+        "nikic/php-parser": "^4.0"
     }
 }

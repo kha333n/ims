@@ -196,7 +196,7 @@ class LicenseAndBackupTest extends TestCase
         // Activate with dev key
         $result = $manager->activate('IMS-TEST-0001-DEV1');
         $this->assertTrue($result['success']);
-        $this->assertStringContainsString('365 days', $result['message']);
+        $this->assertStringContainsString('days', $result['message']);
 
         // Should now be valid
         $this->assertTrue($manager->isValid());

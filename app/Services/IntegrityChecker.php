@@ -3,58 +3,47 @@
 namespace App\Services;
 
 /**
- * Anti-tampering system. At build time, generates a hash manifest of all
- * critical PHP files. At runtime, verifies the manifest on each request.
- * If files have been modified, the app refuses to start.
- *
- * Usage:
- *   Build time:  php artisan integrity:generate
- *   Runtime:     Auto-checked via middleware or service provider
+ * Anti-tampering for critical security files only.
+ * Only checks files that enforce licensing, payments, and access control.
+ * NativePHP's build process modifies other files, so we can't hash everything.
  */
 class IntegrityChecker
 {
     private const MANIFEST_FILE = 'integrity.bin';
 
     /**
-     * Generate the integrity manifest (run at build time).
-     * Hashes all PHP files in critical directories.
+     * Only these specific files are integrity-checked.
+     * These are the files someone would modify to bypass licensing/payments.
+     */
+    private const CRITICAL_FILES = [
+        'app/Http/Middleware/SubscriptionGate.php',
+        'app/Services/LicenseManager.php',
+        'app/Services/HardwareFingerprint.php',
+        'app/Services/IntegrityChecker.php',
+        'app/Services/BackupService.php',
+        'app/Services/DatabaseEncryption.php',
+        'app/Livewire/Settings/LicenseSettings.php',
+        'bootstrap/app.php',
+    ];
+
+    /**
+     * Generate the integrity manifest (run at build time, AFTER NativePHP modifications).
      */
     public function generateManifest(): string
     {
         $hashes = [];
 
-        $dirs = [
-            app_path('Services'),
-            app_path('Http/Middleware'),
-            app_path('Models'),
-            app_path('Livewire'),
-        ];
-
-        foreach ($dirs as $dir) {
-            if (! is_dir($dir)) {
-                continue;
-            }
-
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)
-            );
-
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php') {
-                    $relativePath = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname());
-                    $relativePath = str_replace('\\', '/', $relativePath);
-                    $hashes[$relativePath] = hash_file('sha256', $file->getPathname());
-                }
+        foreach (self::CRITICAL_FILES as $relativePath) {
+            $fullPath = base_path($relativePath);
+            if (file_exists($fullPath)) {
+                $hashes[$relativePath] = hash_file('sha256', $fullPath);
             }
         }
 
         ksort($hashes);
 
-        // Sign the manifest with app secret
         $data = json_encode($hashes);
         $signature = hash_hmac('sha256', $data, config('ims.app_secret'));
-
-        // Store as binary: signature(64 hex) + \n + json
         $manifest = $signature."\n".$data;
 
         $path = $this->getManifestPath();
@@ -64,14 +53,14 @@ class IntegrityChecker
     }
 
     /**
-     * Verify file integrity against the manifest.
-     * Returns true if all files match or no manifest exists (dev mode).
+     * Verify critical file integrity.
+     * Returns true if all critical files match or no manifest exists (dev mode).
      */
     public function verify(): bool
     {
         $path = $this->getManifestPath();
 
-        // No manifest = dev mode, skip check
+        // No manifest = dev mode, skip
         if (! file_exists($path)) {
             return true;
         }
@@ -86,10 +75,9 @@ class IntegrityChecker
         $storedSignature = substr($contents, 0, $newlinePos);
         $data = substr($contents, $newlinePos + 1);
 
-        // Verify manifest signature
         $expectedSignature = hash_hmac('sha256', $data, config('ims.app_secret'));
         if (! hash_equals($expectedSignature, $storedSignature)) {
-            return false; // Manifest itself was tampered
+            return false;
         }
 
         $hashes = json_decode($data, true);
@@ -97,17 +85,15 @@ class IntegrityChecker
             return false;
         }
 
-        // Verify each file
         foreach ($hashes as $relativePath => $expectedHash) {
             $fullPath = base_path($relativePath);
 
             if (! file_exists($fullPath)) {
-                return false; // File was deleted
+                return false;
             }
 
-            $actualHash = hash_file('sha256', $fullPath);
-            if (! hash_equals($expectedHash, $actualHash)) {
-                return false; // File was modified
+            if (! hash_equals($expectedHash, hash_file('sha256', $fullPath))) {
+                return false;
             }
         }
 
@@ -115,7 +101,7 @@ class IntegrityChecker
     }
 
     /**
-     * Get list of tampered files (for diagnostics).
+     * Get list of tampered files (diagnostics).
      */
     public function getTamperedFiles(): array
     {
