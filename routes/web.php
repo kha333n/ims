@@ -22,6 +22,7 @@ use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
 use App\Livewire\Inventory\PurchasePoint;
+use App\Livewire\Inventory\SupplierList;
 use App\Livewire\Recovery\RecoveryEntry;
 use App\Livewire\Reports\CustomerReport;
 use App\Livewire\Reports\DailyRecoveryReport;
@@ -46,6 +47,7 @@ Route::get('/', Overview::class)->name('dashboard');
 // Inventory
 Route::prefix('inventory')->name('inventory.')->group(function () {
     Route::get('/products', ProductList::class)->name('products');
+    Route::get('/suppliers', SupplierList::class)->name('suppliers');
     Route::get('/purchase', PurchasePoint::class)->name('purchase');
 });
 

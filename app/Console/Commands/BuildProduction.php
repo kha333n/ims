@@ -8,7 +8,8 @@ class BuildProduction extends Command
 {
     protected $signature = 'build:production
         {--skip-build : Only prepare staging dir, do not run native:build}
-        {--skip-tests : Skip running test suite}';
+        {--skip-tests : Skip running test suite}
+        {--debug : Enable APP_DEBUG=true in the build for troubleshooting}';
 
     protected $description = 'Full production build pipeline: copy → obfuscate → integrity → clean → build Win64. Does NOT modify project files.';
 
@@ -186,13 +187,18 @@ class BuildProduction extends Command
         }
 
         // Create production .env
+        $sentryDsn = config('ims.sentry_dsn', '');
         $envContent = "APP_NAME=\"Installment Management System\"\n"
             ."APP_ENV=production\n"
             .'APP_KEY='.config('app.key')."\n"
-            ."APP_DEBUG=false\n"
+            .'APP_DEBUG='.($this->option('debug') ? 'true' : 'false')."\n"
             ."APP_URL=http://localhost\n"
             ."LOG_CHANNEL=single\n"
-            ."DB_CONNECTION=sqlite\n";
+            ."DB_CONNECTION=sqlite\n"
+            ."SENTRY_LARAVEL_DSN={$sentryDsn}\n"
+            ."SENTRY_ENABLE_LOGS=true\n"
+            ."LOG_CHANNEL=stack\n"
+            ."LOG_STACK=single,sentry_logs\n";
 
         file_put_contents($this->stagingDir.'/.env', $envContent);
 

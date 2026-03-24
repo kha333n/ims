@@ -33,4 +33,13 @@ return [
     | and backup files. In production builds, this is obfuscated.
     */
     'app_secret' => env('IMS_APP_SECRET', 'ims-techmiddle-2026-xK9pL2mN8qR4'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sentry Error Tracking
+    |--------------------------------------------------------------------------
+    | DSN is set here and injected into build .env. Leave empty to disable.
+    | Get your DSN from https://sentry.io
+    */
+    'sentry_dsn' => env('SENTRY_LARAVEL_DSN', 'https://e343747227bcc22ef8ab6cedc1dbdb4e@o4506540143542272.ingest.us.sentry.io/4511100662317056'),
 ];

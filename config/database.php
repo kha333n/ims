@@ -44,6 +44,20 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        // Persistent SQLite in AppData — survives uninstall/reinstall
+        'persistent' => [
+            'driver' => 'sqlite',
+            'database' => (PHP_OS_FAMILY === 'Windows'
+                ? (getenv('APPDATA') ?: getenv('USERPROFILE').'\\AppData\\Roaming').'\\IMS\\ims.sqlite'
+                : (getenv('HOME') ?: '/tmp').'/.ims/ims.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

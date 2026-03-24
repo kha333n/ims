@@ -515,7 +515,9 @@ class BackupService
 
     private function getDatabasePath(): string
     {
-        return database_path('database.sqlite');
+        $connection = config('database.default', 'sqlite');
+
+        return config("database.connections.{$connection}.database", database_path('database.sqlite'));
     }
 
     private function getBackupDir(): string

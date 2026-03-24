@@ -26,6 +26,7 @@
                         'prefixes' => ['inventory'],
                         'items' => [
                             ['label' => 'Product List',  'route' => 'inventory.products'],
+                            ['label' => 'Suppliers',     'route' => 'inventory.suppliers'],
                             ['label' => 'New Purchase',  'route' => 'inventory.purchase'],
                         ],
                     ],
