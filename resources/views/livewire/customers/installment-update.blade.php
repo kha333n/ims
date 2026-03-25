@@ -75,11 +75,17 @@
                         <x-money-input wire-model="new_amount" :live="true" />
                         @error('new_amount') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Number of {{ $this->periodLabel }}</label>
+                        <input wire:model.live.debounce.300ms="new_periods" type="number" min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                        <p class="mt-0.5 text-xs text-gray-400">Edit either field — the other auto-calculates.</p>
+                    </div>
                 </div>
 
                 @if ($this->periodsToComplete !== null)
                     <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-                        <p class="text-sm text-blue-800">Estimated completion: <strong>{{ $this->periodsToComplete }} {{ $this->periodLabel }}</strong> to pay off remaining {{ formatMoney($remaining_amount) }}</p>
+                        <p class="text-sm text-blue-800">Estimated: <strong>{{ $this->periodsToComplete }} {{ $this->periodLabel }}</strong> to pay off remaining {{ formatMoney($remaining_amount) }}</p>
                     </div>
                 @endif
 

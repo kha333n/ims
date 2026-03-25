@@ -10,6 +10,7 @@ class Problem extends Model
     protected $fillable = [
         'account_id', 'manager', 'checker', 'branch', 'problem_text',
         'previous_promise_date', 'new_commitment_date', 'action_taken', 'closed',
+        'status', 'severity', 'recovery_man_id',
     ];
 
     public function casts(): array
@@ -24,5 +25,10 @@ class Problem extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function recoveryMan(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'recovery_man_id');
     }
 }

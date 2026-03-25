@@ -4,11 +4,13 @@ namespace App\Livewire\Sales;
 
 use App\Models\Account;
 use App\Models\AccountItem;
+use App\Models\CommissionRecord;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\FinancialLedger;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Purchase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -72,6 +74,8 @@ class NewSale extends Component
     public string $new_customer_father = '';
 
     public string $new_customer_mobile = '';
+
+    public string $new_customer_mobile_2 = '';
 
     public string $new_customer_cnic = '';
 
@@ -190,8 +194,8 @@ class NewSale extends Component
     {
         $this->reset([
             'new_customer_name', 'new_customer_father', 'new_customer_mobile',
-            'new_customer_cnic', 'new_customer_home_address', 'new_customer_shop_address',
-            'new_customer_reference',
+            'new_customer_mobile_2', 'new_customer_cnic', 'new_customer_home_address',
+            'new_customer_shop_address', 'new_customer_reference',
         ]);
         $this->showNewCustomerModal = true;
     }
@@ -206,8 +210,9 @@ class NewSale extends Component
         $this->validate([
             'new_customer_name' => 'required|string|max:255',
             'new_customer_father' => 'nullable|string|max:255',
-            'new_customer_mobile' => 'nullable|string|max:20',
-            'new_customer_cnic' => 'nullable|string|max:20',
+            'new_customer_mobile' => ['nullable', 'string', 'max:15', 'regex:/^0\d{3}-?\d{7,8}$/'],
+            'new_customer_mobile_2' => ['nullable', 'string', 'max:15', 'regex:/^0\d{3}-?\d{7,8}$/'],
+            'new_customer_cnic' => ['nullable', 'string', 'max:15', 'regex:/^\d{5}-?\d{7}-?\d$/'],
             'new_customer_home_address' => 'nullable|string|max:500',
             'new_customer_shop_address' => 'nullable|string|max:500',
             'new_customer_reference' => 'nullable|string|max:255',
@@ -217,6 +222,7 @@ class NewSale extends Component
             'name' => $this->new_customer_name,
             'father_name' => $this->new_customer_father ?: null,
             'mobile' => $this->new_customer_mobile ?: null,
+            'mobile_2' => $this->new_customer_mobile_2 ?: null,
             'cnic' => $this->new_customer_cnic ?: null,
             'home_address' => $this->new_customer_home_address ?: null,
             'shop_address' => $this->new_customer_shop_address ?: null,
@@ -303,6 +309,23 @@ class NewSale extends Component
                     'unit_price' => parseMoney($item['price']),
                 ]);
 
+                // FIFO: deduct from oldest purchase batches first
+                $qtyToDeduct = $item['quantity'];
+                $batches = Purchase::where('product_id', $item['product_id'])
+                    ->where('remaining_qty', '>', 0)
+                    ->orderBy('purchase_date')
+                    ->orderBy('id')
+                    ->get();
+
+                foreach ($batches as $batch) {
+                    if ($qtyToDeduct <= 0) {
+                        break;
+                    }
+                    $take = min($qtyToDeduct, $batch->remaining_qty);
+                    $batch->decrement('remaining_qty', $take);
+                    $qtyToDeduct -= $take;
+                }
+
                 Product::where('id', $item['product_id'])
                     ->decrement('quantity', $item['quantity']);
             }
@@ -334,6 +357,17 @@ class NewSale extends Component
                     'debit' => $advanceAmount,
                     'balance_after' => $remainingAmount,
                     'description' => "Advance payment at sale Acc#{$account->id}",
+                ]);
+            }
+
+            // Create commission record for sale man
+            $saleMan = Employee::find($this->sale_man_id);
+            if ($saleMan && $saleMan->commission_percent > 0) {
+                CommissionRecord::create([
+                    'employee_id' => $saleMan->id,
+                    'account_id' => $account->id,
+                    'amount' => (int) ($totalAmount * $saleMan->commission_percent / 100),
+                    'status' => 'pending',
                 ]);
             }
         });

@@ -12,6 +12,7 @@ use App\Livewire\Customers\CustomerList;
 use App\Livewire\Customers\InstallmentUpdate;
 use App\Livewire\Customers\ProblemEntry;
 use App\Livewire\Dashboard\Overview;
+use App\Livewire\Expenses\ExpenseEntry;
 use App\Livewire\Financial\CollectionReport as FinancialCollectionReport;
 use App\Livewire\Financial\CommissionReport;
 use App\Livewire\Financial\CreditDebitReport;
@@ -22,6 +23,7 @@ use App\Livewire\Financial\LossReport;
 use App\Livewire\Financial\ProfitLossReport;
 use App\Livewire\Financial\ReceivablesReport;
 use App\Livewire\Financial\SupplierExpenseReport;
+use App\Livewire\HR\Payroll;
 use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
 use App\Livewire\Inventory\ProductList;
@@ -76,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('hr')->name('hr.')->middleware('can:users.manage')->group(function () {
         Route::get('/sale-men', SaleManList::class)->name('sale-men');
         Route::get('/recovery-men', RecoveryManList::class)->name('recovery-men');
+        Route::get('/payroll', Payroll::class)->name('payroll');
     });
 
     // Customers
@@ -127,6 +130,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/losses', LossReport::class)->name('losses');
         Route::get('/credit-debit', CreditDebitReport::class)->name('credit-debit');
     });
+
+    // Expenses
+    Route::get('/expenses', ExpenseEntry::class)->name('expenses');
 
     // Settings (owner only)
     Route::prefix('settings')->name('settings.')->middleware('can:settings.manage')->group(function () {

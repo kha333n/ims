@@ -9,12 +9,19 @@
     <style>
         @media print {
             .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white !important; }
+            .print-show { display: block !important; }
+            body { background: white !important; font-size: 10px !important; }
             main { padding: 0 !important; }
-            @page { margin: 1cm; }
+            @page { margin: 0.8cm 1cm; size: auto; }
+            table { font-size: 9px !important; }
+            th, td { padding: 3px 6px !important; }
+            .report-header { margin-bottom: 8px !important; }
+            .report-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #999; border-top: 1px solid #ddd; padding-top: 4px; }
         }
-        .print-only { display: none; }
+        .print-show { display: none; }
+        @media screen {
+            .report-footer { display: none; }
+        }
     </style>
 </head>
 <body class="h-full bg-content flex flex-col" x-data>
@@ -93,22 +100,39 @@
         </div>
     </div>
 
-    {{-- Print-only header --}}
-    <div class="print-only text-center mb-3 pt-2">
-        <h1 class="text-lg font-bold">{{ \App\Models\Setting::get('company_name', 'Installment Management System') }}</h1>
-        <p class="text-xs text-gray-500">{{ \App\Models\Setting::get('company_address', '') }}</p>
-    </div>
-
     {{-- Report Content --}}
     <main class="flex-1 overflow-auto p-6">
         <div class="max-w-7xl mx-auto">
+            {{-- Company Header (visible in both screen and print) --}}
+            @php
+                $companyName = \App\Models\Setting::get('company_name', 'Installment Management System');
+                $companyAddress = \App\Models\Setting::get('company_address', '');
+                $companyPhone = \App\Models\Setting::get('company_phone', '');
+            @endphp
+            <div class="report-header text-center mb-4">
+                <h1 class="text-lg font-bold text-navy-800">{{ $companyName }}</h1>
+                @if ($companyAddress)
+                    <p class="text-xs text-gray-500">{{ $companyAddress }}</p>
+                @endif
+                @if ($companyPhone)
+                    <p class="text-xs text-gray-500">{{ $companyPhone }}</p>
+                @endif
+            </div>
+
+            {{-- Report Title & Timestamp --}}
             <div class="flex items-center justify-between mb-4 border-b border-gray-300 pb-2">
                 <h2 class="text-base font-bold text-navy-800">{{ $title ?? 'Report' }}</h2>
-                <div class="text-xs text-gray-500 no-print">Generated: {{ now()->format('d/M/Y H:i') }}</div>
+                <div class="text-xs text-gray-500">Report Time: {{ now()->format('d/M/Y g:i A') }}</div>
             </div>
+
             {{ $slot }}
         </div>
     </main>
+
+    {{-- Print Footer --}}
+    <div class="report-footer">
+        Copyright &copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.
+    </div>
 
     @livewireScripts
 </body>

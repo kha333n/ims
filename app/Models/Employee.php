@@ -13,7 +13,7 @@ class Employee extends Model
 
     protected $fillable = [
         'name', 'type', 'phone', 'cnic', 'address',
-        'commission_percent', 'salary', 'area', 'rank',
+        'commission_percent', 'salary', 'area', 'rank', 'balance',
     ];
 
     public function casts(): array
@@ -47,5 +47,15 @@ class Employee extends Model
     public function paymentsCollected(): HasMany
     {
         return $this->hasMany(Payment::class, 'collected_by');
+    }
+
+    public function commissionRecords(): HasMany
+    {
+        return $this->hasMany(CommissionRecord::class);
+    }
+
+    public function payrollEntries(): HasMany
+    {
+        return $this->hasMany(PayrollEntry::class);
     }
 }

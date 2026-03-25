@@ -38,9 +38,11 @@ class InstallmentUpdate extends Component
 
     public string $new_amount = '';
 
+    public string $new_periods = '';
+
     public function updatedCustomerId(): void
     {
-        $this->reset(['account_id', 'current_type', 'current_day', 'current_amount', 'remaining_amount', 'customer_address', 'customer_mobile', 'new_type', 'new_day', 'new_amount']);
+        $this->reset(['account_id', 'current_type', 'current_day', 'current_amount', 'remaining_amount', 'customer_address', 'customer_mobile', 'new_type', 'new_day', 'new_amount', 'new_periods']);
     }
 
     public function updatedAccountId(): void
@@ -57,6 +59,9 @@ class InstallmentUpdate extends Component
                 $this->new_type = $account->installment_type ?? '';
                 $this->new_day = $account->installment_day;
                 $this->new_amount = $account->installment_amount ? (string) ($account->installment_amount / 100) : '';
+                if ($account->installment_amount > 0 && $account->remaining_amount > 0) {
+                    $this->new_periods = (string) (int) ceil($account->remaining_amount / $account->installment_amount);
+                }
 
                 return;
             }
@@ -64,6 +69,25 @@ class InstallmentUpdate extends Component
 
         $this->current_type = null;
         $this->remaining_amount = null;
+    }
+
+    public function updatedNewAmount(): void
+    {
+        if ($this->remaining_amount && $this->new_amount && (float) $this->new_amount > 0) {
+            $amountPaisas = parseMoney($this->new_amount);
+            if ($amountPaisas > 0) {
+                $this->new_periods = (string) (int) ceil($this->remaining_amount / $amountPaisas);
+            }
+        }
+    }
+
+    public function updatedNewPeriods(): void
+    {
+        if ($this->remaining_amount && $this->new_periods && (int) $this->new_periods > 0) {
+            $periods = (int) $this->new_periods;
+            $amountPaisas = (int) ceil($this->remaining_amount / $periods);
+            $this->new_amount = (string) ($amountPaisas / 100);
+        }
     }
 
     public function getPeriodsToCompleteProperty(): ?int

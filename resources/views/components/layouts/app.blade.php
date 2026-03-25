@@ -40,6 +40,9 @@
                             ['label' => '---', 'route' => ''],
                             ['label' => 'Sale Men',           'route' => 'hr.sale-men', 'permission' => 'users.manage'],
                             ['label' => 'Recovery Men',       'route' => 'hr.recovery-men', 'permission' => 'users.manage'],
+                            ['label' => 'Payroll',            'route' => 'hr.payroll', 'permission' => 'users.manage'],
+                            ['label' => '---', 'route' => ''],
+                            ['label' => 'Daily Expenses',     'route' => 'expenses'],
                             ['label' => '---', 'route' => ''],
                             ['label' => 'Account Closure',    'route' => 'customers.closure', 'permission' => 'accounts.close'],
                             ['label' => 'Account Transfer',   'route' => 'customers.transfer', 'permission' => 'accounts.transfer'],
@@ -181,6 +184,7 @@
                 ['label' => 'New Sales',       'route' => 'sales.new',          'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'permission' => 'sales.create'],
                 ['label' => 'Recovery Entry',  'route' => 'recovery.entry',     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'permission' => 'recovery.entry'],
                 ['label' => 'New Customer',    'route' => 'customers.create',   'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', 'permission' => 'customers.manage'],
+                ['label' => 'Expense Entry',  'route' => 'expenses',           'icon' => 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z', 'permission' => 'settings.manage'],
             ];
         @endphp
         @foreach ($toolbar as $btn)

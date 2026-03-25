@@ -33,7 +33,9 @@ class RecoveryManList extends Component
 
     public string $rank = '';
 
-    public int $salary = 0;
+    public string $salary = '0';
+
+    public int $commission_percent = 0;
 
     // Delete
     public ?int $confirmingDeleteId = null;
@@ -61,7 +63,8 @@ class RecoveryManList extends Component
         $this->address = $employee->address ?? '';
         $this->area = $employee->area ?? '';
         $this->rank = $employee->rank ?? '';
-        $this->salary = $employee->salary ?? 0;
+        $this->salary = $employee->salary ? (string) ($employee->salary / 100) : '0';
+        $this->commission_percent = $employee->commission_percent ?? 0;
         $this->showModal = true;
     }
 
@@ -69,12 +72,13 @@ class RecoveryManList extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'cnic' => 'nullable|string|max:20',
+            'phone' => ['nullable', 'string', 'max:15', 'regex:/^0\d{3}-?\d{7,8}$/'],
+            'cnic' => ['nullable', 'string', 'max:15', 'regex:/^\d{5}-?\d{7}-?\d$/'],
             'address' => 'nullable|string|max:500',
             'area' => 'nullable|string|max:255',
             'rank' => 'nullable|string|max:255',
-            'salary' => 'required|integer|min:0',
+            'salary' => 'required|numeric|min:0',
+            'commission_percent' => 'required|integer|min:0|max:100',
         ]);
 
         $data = [
@@ -85,7 +89,8 @@ class RecoveryManList extends Component
             'address' => $this->address ?: null,
             'area' => $this->area ?: null,
             'rank' => $this->rank ?: null,
-            'salary' => $this->salary,
+            'salary' => parseMoney($this->salary),
+            'commission_percent' => $this->commission_percent,
         ];
 
         $action = $this->editingId ? 'Updated' : 'Added';
@@ -137,7 +142,7 @@ class RecoveryManList extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'name', 'phone', 'cnic', 'address', 'area', 'rank', 'salary']);
+        $this->reset(['editingId', 'name', 'phone', 'cnic', 'address', 'area', 'rank', 'salary', 'commission_percent']);
         $this->resetValidation();
     }
 

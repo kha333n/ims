@@ -4,6 +4,7 @@ namespace App\Livewire\Customers;
 
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\Problem;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -22,6 +23,12 @@ class ProblemEntry extends Component
 
     public ?string $items_list = null;
 
+    public ?int $account_total = null;
+
+    public ?int $account_remaining = null;
+
+    public ?int $days_overdue = null;
+
     // Form
     public string $manager = '';
 
@@ -37,13 +44,19 @@ class ProblemEntry extends Component
 
     public string $action_taken = '';
 
+    public string $status = 'open';
+
+    public string $severity = '';
+
+    public ?int $recovery_man_id = null;
+
     public bool $closed = false;
 
     public ?array $actionSummary = null;
 
     public function updatedCustomerId(): void
     {
-        $this->reset(['account_id', 'customer_name', 'customer_phone', 'items_list']);
+        $this->reset(['account_id', 'customer_name', 'customer_phone', 'items_list', 'account_total', 'account_remaining', 'days_overdue']);
         $this->resetForm();
     }
 
@@ -51,11 +64,15 @@ class ProblemEntry extends Component
     {
         $this->resetForm();
         if ($this->account_id) {
-            $account = Account::with(['customer', 'items.product', 'problems' => fn ($q) => $q->latest()])->find($this->account_id);
+            $account = Account::with(['customer', 'recoveryMan', 'items.product', 'problems' => fn ($q) => $q->latest()])->find($this->account_id);
             if ($account) {
                 $this->customer_name = $account->customer->name;
                 $this->customer_phone = $account->customer->mobile ?? '—';
                 $this->items_list = $account->items->pluck('product.name')->filter()->join(', ');
+                $this->account_total = $account->total_amount;
+                $this->account_remaining = $account->remaining_amount;
+                $this->days_overdue = $account->sale_date ? (int) $account->sale_date->diffInDays(now()) : null;
+                $this->recovery_man_id = $account->recovery_man_id;
 
                 $lastProblem = $account->problems->first();
                 if ($lastProblem) {
@@ -76,6 +93,9 @@ class ProblemEntry extends Component
             'previous_promise_date' => 'nullable|date',
             'new_commitment_date' => 'nullable|date',
             'action_taken' => 'nullable|string|max:1000',
+            'status' => 'required|in:open,in_progress,resolved,escalated',
+            'severity' => 'nullable|in:low,medium,high,critical',
+            'recovery_man_id' => 'nullable|exists:employees,id',
             'closed' => 'boolean',
         ]);
 
@@ -88,12 +108,15 @@ class ProblemEntry extends Component
             'previous_promise_date' => $this->previous_promise_date,
             'new_commitment_date' => $this->new_commitment_date,
             'action_taken' => $this->action_taken ?: null,
-            'closed' => $this->closed,
+            'closed' => $this->status === 'resolved',
+            'status' => $this->status,
+            'severity' => $this->severity ?: null,
+            'recovery_man_id' => $this->recovery_man_id,
         ]);
 
         $this->actionSummary = [
             'action' => 'Problem Recorded',
-            'detail' => "Acc#{$this->account_id} — {$this->customer_name}".($this->closed ? ' (Closed)' : ''),
+            'detail' => "Acc#{$this->account_id} — {$this->customer_name} [{$this->status}]",
         ];
 
         $this->resetForm();
@@ -101,7 +124,8 @@ class ProblemEntry extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['manager', 'checker', 'branch', 'problem_text', 'previous_promise_date', 'new_commitment_date', 'action_taken', 'closed']);
+        $this->reset(['manager', 'checker', 'branch', 'problem_text', 'previous_promise_date', 'new_commitment_date', 'action_taken', 'closed', 'status', 'severity']);
+        $this->status = 'open';
         $this->resetValidation();
     }
 
@@ -120,6 +144,9 @@ class ProblemEntry extends Component
             $history = Problem::where('account_id', $this->account_id)->latest()->get();
         }
 
-        return view('livewire.customers.problem-entry', compact('custOpts', 'accOpts', 'history'));
+        $rmOpts = Employee::recoveryMen()->orderBy('name')->get()
+            ->map(fn ($e) => ['id' => $e->id, 'label' => $e->name.($e->area ? " ({$e->area})" : '')]);
+
+        return view('livewire.customers.problem-entry', compact('custOpts', 'accOpts', 'history', 'rmOpts'));
     }
 }

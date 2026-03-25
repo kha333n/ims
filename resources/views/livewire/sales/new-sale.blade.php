@@ -245,15 +245,18 @@
                             <input wire:model="new_customer_father" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
-                            <input wire:model="new_customer_mobile" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                            <x-phone-input wire-model="new_customer_mobile" label="Mobile" />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">CNIC</label>
-                            <input wire:model="new_customer_cnic" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                            <x-phone-input wire-model="new_customer_mobile_2" label="Mobile 2" />
                         </div>
+                        <div>
+                            <x-cnic-input wire-model="new_customer_cnic" label="CNIC" />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Reference</label>
                             <input wire:model="new_customer_reference" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">

@@ -32,6 +32,8 @@ class SaleManList extends Component
 
     public int $commission_percent = 0;
 
+    public string $salary = '0';
+
     // Delete state
     public ?int $confirmingDeleteId = null;
 
@@ -57,6 +59,7 @@ class SaleManList extends Component
         $this->cnic = $employee->cnic ?? '';
         $this->address = $employee->address ?? '';
         $this->commission_percent = $employee->commission_percent ?? 0;
+        $this->salary = $employee->salary ? (string) ($employee->salary / 100) : '0';
         $this->showModal = true;
     }
 
@@ -64,10 +67,11 @@ class SaleManList extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'cnic' => 'nullable|string|max:20',
+            'phone' => ['nullable', 'string', 'max:15', 'regex:/^0\d{3}-?\d{7,8}$/'],
+            'cnic' => ['nullable', 'string', 'max:15', 'regex:/^\d{5}-?\d{7}-?\d$/'],
             'address' => 'nullable|string|max:500',
             'commission_percent' => 'required|integer|min:0|max:100',
+            'salary' => 'required|numeric|min:0',
         ]);
 
         $data = [
@@ -77,6 +81,7 @@ class SaleManList extends Component
             'cnic' => $this->cnic ?: null,
             'address' => $this->address ?: null,
             'commission_percent' => $this->commission_percent,
+            'salary' => parseMoney($this->salary),
         ];
 
         $action = $this->editingId ? 'Updated' : 'Added';
@@ -128,7 +133,7 @@ class SaleManList extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'name', 'phone', 'cnic', 'address', 'commission_percent']);
+        $this->reset(['editingId', 'name', 'phone', 'cnic', 'address', 'commission_percent', 'salary']);
         $this->resetValidation();
     }
 

@@ -36,27 +36,30 @@ class MonthlyRecoveryReport extends Component
     public function render()
     {
         $rows = collect();
+
         if ($this->generated) {
             $rows = Account::with(['customer', 'recoveryMan', 'payments'])
                 ->when($this->recovery_man_id, fn ($q) => $q->where('recovery_man_id', $this->recovery_man_id))
                 ->whereHas('payments', fn ($q) => $q->whereBetween('payment_date', [$this->date_from, $this->date_to]))
                 ->get()
                 ->map(function ($account) {
-                    $periodPayments = $account->payments
+                    $collectedPeriod = $account->payments
                         ->whereBetween('payment_date', [$this->date_from, $this->date_to])
                         ->sum('amount');
+
+                    $collectedAllTime = $account->payments->sum('amount');
 
                     return [
                         'id' => $account->id,
                         'customer' => $account->customer->name,
-                        'rm' => $account->recoveryMan?->name ?? '—',
+                        'phone' => $account->customer->mobile ?? '—',
+                        'recovery_man' => $account->recoveryMan?->name ?? '—',
                         'area' => $account->recoveryMan?->area ?? '—',
                         'total' => $account->total_amount,
                         'advance' => $account->advance_amount,
-                        'collected_period' => $periodPayments,
+                        'collected_period' => $collectedPeriod,
+                        'collected_all_time' => $collectedAllTime,
                         'remaining' => $account->remaining_amount,
-                        'discount' => $account->discount_amount,
-                        'sale_date' => $account->sale_date,
                     ];
                 });
         }

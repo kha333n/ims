@@ -32,6 +32,7 @@ class SalesmanReport extends Component
             'sale_man_id' => 'required|exists:employees,id',
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
+            'status' => 'required|in:all,active,closed',
         ]);
         $this->generated = true;
     }
@@ -39,18 +40,44 @@ class SalesmanReport extends Component
     public function render()
     {
         $accounts = collect();
+        $totals = ['total' => 0, 'advance' => 0, 'remaining' => 0];
+        $commission = ['percent' => 0, 'earned' => 0];
+        $saleMan = null;
+
         if ($this->generated) {
+            $saleMan = Employee::find($this->sale_man_id);
+
             $accounts = Account::with(['customer', 'saleMan', 'items.product'])
                 ->where('sale_man_id', $this->sale_man_id)
                 ->whereBetween('sale_date', [$this->date_from, $this->date_to])
                 ->when($this->status !== 'all', fn ($q) => $q->where('status', $this->status))
                 ->orderBy('sale_date', 'desc')
                 ->get();
+
+            $totalSales = $accounts->sum('total_amount');
+            $commissionPercent = $saleMan?->commission_percent ?? 0;
+
+            $totals = [
+                'total' => $totalSales,
+                'advance' => $accounts->sum('advance_amount'),
+                'remaining' => $accounts->sum('remaining_amount'),
+            ];
+
+            $commission = [
+                'percent' => $commissionPercent,
+                'earned' => (int) round($totalSales * $commissionPercent / 100),
+            ];
         }
 
         $smOpts = Employee::saleMen()->orderBy('name')->get()
             ->map(fn ($e) => ['id' => $e->id, 'label' => $e->name]);
 
-        return view('livewire.reports.salesman-report', ['accounts' => $accounts, 'smOpts' => $smOpts]);
+        return view('livewire.reports.salesman-report', [
+            'accounts' => $accounts,
+            'totals' => $totals,
+            'commission' => $commission,
+            'saleMan' => $saleMan,
+            'smOpts' => $smOpts,
+        ]);
     }
 }

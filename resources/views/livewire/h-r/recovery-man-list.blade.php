@@ -34,6 +34,7 @@
                         <th class="px-4 py-2.5 text-left font-medium">Phone</th>
                         <th class="px-4 py-2.5 text-left font-medium">Area</th>
                         <th class="px-4 py-2.5 text-left font-medium">Rank</th>
+                        <th class="px-4 py-2.5 text-right font-medium">Commission %</th>
                         <th class="px-4 py-2.5 text-center font-medium w-28">Actions</th>
                     </tr>
                 </thead>
@@ -45,6 +46,7 @@
                             <td class="px-4 py-2">{{ $emp->phone ?? '—' }}</td>
                             <td class="px-4 py-2">{{ $emp->area ?? '—' }}</td>
                             <td class="px-4 py-2">{{ $emp->rank ?? '—' }}</td>
+                            <td class="px-4 py-2 text-right tabular-nums">{{ $emp->commission_percent !== null ? $emp->commission_percent . '%' : '—' }}</td>
                             <td class="px-4 py-2 text-center space-x-2">
                                 <button wire:click="openEditModal({{ $emp->id }})" class="text-navy-500 hover:text-navy-700 text-xs font-medium">Edit</button>
                                 <button wire:click="confirmDelete({{ $emp->id }})" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
@@ -52,7 +54,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                            <td colspan="7" class="px-4 py-12 text-center text-gray-400">
                                 @if ($search)
                                     No recovery men found matching "{{ $search }}"
                                 @else
@@ -85,12 +87,10 @@
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                            <input wire:model="phone" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
+                            <x-phone-input wire-model="phone" label="Phone" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">CNIC</label>
-                            <input wire:model="cnic" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
+                            <x-cnic-input wire-model="cnic" label="CNIC" />
                         </div>
                     </div>
                     <div>
@@ -107,9 +107,16 @@
                             <input wire:model="rank" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
                         </div>
                     </div>
-                    <div>
-                        <x-money-input wire-model="salary" label="Salary (PKR)" />
-                        @error('salary') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <x-money-input wire-model="salary" label="Salary (PKR)" />
+                            @error('salary') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Commission %</label>
+                            <input wire:model="commission_percent" type="number" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 focus:border-navy-400 outline-none">
+                            @error('commission_percent') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
                     </div>
                     <div class="flex justify-end gap-3 pt-2">
                         <button type="button" wire:click="closeModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>

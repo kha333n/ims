@@ -61,6 +61,9 @@ class AccountClosure extends Component
                     'paid' => $account->total_amount - $account->remaining_amount,
                     'remaining' => $account->remaining_amount,
                     'status' => $account->status,
+                    'discount' => $account->discount_amount,
+                    'discount_slip' => $account->discount_slip,
+                    'closed_at' => $account->closed_at?->format('d/M/Y'),
                 ];
 
                 return;

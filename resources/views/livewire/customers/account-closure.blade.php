@@ -66,6 +66,16 @@
                         <button wire:click="confirmClose" wire:loading.attr="disabled" class="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors disabled:opacity-50"><svg wire:loading wire:target="confirmClose" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Close Account</button>
                     </div>
                 @else
+                    @if (($accountInfo['discount'] ?? 0) > 0 || ($accountInfo['discount_slip'] ?? null))
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm">
+                            <p class="font-medium text-yellow-800 mb-1">Previous Closure Info</p>
+                            <div class="grid grid-cols-3 gap-2 text-xs">
+                                @if ($accountInfo['closed_at'] ?? null)<div><span class="text-gray-500">Closed On:</span> {{ $accountInfo['closed_at'] }}</div>@endif
+                                @if (($accountInfo['discount'] ?? 0) > 0)<div><span class="text-gray-500">Discount:</span> {{ formatMoney($accountInfo['discount']) }}</div>@endif
+                                @if ($accountInfo['discount_slip'] ?? null)<div><span class="text-gray-500">Slip #:</span> {{ $accountInfo['discount_slip'] }}</div>@endif
+                            </div>
+                        </div>
+                    @endif
                     <div class="flex justify-end">
                         <button wire:click="activateAccount" wire:loading.attr="disabled" class="px-5 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors disabled:opacity-50"><svg wire:loading wire:target="activateAccount" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Activate Account</button>
                     </div>

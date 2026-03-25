@@ -150,13 +150,16 @@ class PurchasePoint extends Component
 
         DB::transaction(function () {
             foreach ($this->items as $item) {
+                $nextBatch = Purchase::max('id') + 1;
                 Purchase::create([
                     'product_id' => $item['product_id'],
                     'supplier_id' => $this->supplier_id ?: null,
                     'quantity' => $item['quantity'],
+                    'remaining_qty' => $item['quantity'],
                     'unit_cost' => parseMoney($item['unit_cost']),
                     'purchase_date' => $this->purchase_date,
                     'notes' => $this->notes ?: null,
+                    'batch_number' => 'B-'.str_pad($nextBatch, 4, '0', STR_PAD_LEFT),
                 ]);
 
                 Product::where('id', $item['product_id'])

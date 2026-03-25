@@ -43,14 +43,18 @@
                                     <input wire:model="father_name" type="text" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-navy-400 outline-none">
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-3">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Mobile</label>
-                                    <input wire:model="mobile" type="text" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                                    <x-phone-input wire-model="mobile" label="Mobile" />
+                                    @error('mobile') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">CNIC</label>
-                                    <input wire:model="cnic" type="text" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                                    <x-phone-input wire-model="mobile_2" label="Mobile 2" />
+                                    @error('mobile_2') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <x-cnic-input wire-model="cnic" label="CNIC" />
+                                    @error('cnic') <p class="mt-0.5 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
                             </div>
                             <div>
@@ -83,6 +87,10 @@
                             <div>
                                 <dt class="text-gray-500 text-xs">Mobile</dt>
                                 <dd>{{ $customer->mobile ?? '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500 text-xs">Mobile 2</dt>
+                                <dd>{{ $customer->mobile_2 ?? '—' }}</dd>
                             </div>
                             <div>
                                 <dt class="text-gray-500 text-xs">CNIC</dt>
