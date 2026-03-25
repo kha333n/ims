@@ -23,6 +23,7 @@ use App\Livewire\Financial\LossReport;
 use App\Livewire\Financial\ProfitLossReport;
 use App\Livewire\Financial\ReceivablesReport;
 use App\Livewire\Financial\SupplierExpenseReport;
+use App\Livewire\Help\UserManual;
 use App\Livewire\HR\Payroll;
 use App\Livewire\HR\RecoveryManList;
 use App\Livewire\HR\SaleManList;
@@ -133,6 +134,9 @@ Route::middleware('auth')->group(function () {
 
     // Expenses
     Route::get('/expenses', ExpenseEntry::class)->name('expenses');
+
+    // Help
+    Route::get('/manual', UserManual::class)->name('manual');
 
     // Settings (owner only)
     Route::prefix('settings')->name('settings.')->middleware('can:settings.manage')->group(function () {
