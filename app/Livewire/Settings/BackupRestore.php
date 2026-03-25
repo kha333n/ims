@@ -15,6 +15,10 @@ class BackupRestore extends Component
 
     public ?string $restorePath = null;
 
+    public bool $showDeleteConfirm = false;
+
+    public ?string $deletePath = null;
+
     public function createBackup(): void
     {
         try {
@@ -73,16 +77,33 @@ class BackupRestore extends Component
         }
     }
 
-    public function deleteBackup(string $path): void
+    public function confirmDeleteBackup(string $path): void
     {
-        if (file_exists($path)) {
-            unlink($path);
+        $this->deletePath = $path;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDeleteBackup(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deletePath = null;
+    }
+
+    public function deleteBackup(): void
+    {
+        $this->showDeleteConfirm = false;
+
+        if ($this->deletePath && file_exists($this->deletePath)) {
+            $filename = basename($this->deletePath);
+            unlink($this->deletePath);
             $this->actionSummary = [
                 'type' => 'success',
                 'title' => 'Backup Deleted',
-                'message' => basename($path).' has been deleted.',
+                'message' => $filename.' has been deleted.',
             ];
         }
+
+        $this->deletePath = null;
     }
 
     public function render()

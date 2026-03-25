@@ -40,22 +40,12 @@
         <div class="bg-white rounded-lg shadow px-6 py-5 mb-6">
             <h2 class="text-sm font-bold text-navy-800 mb-2">Manual Backup</h2>
             <p class="text-sm text-gray-600 mb-3">Creates an encrypted backup (.imsb) containing your database and all files. Only this app with your license can restore it.</p>
-            <button wire:click="createBackup" class="px-5 py-2 bg-navy-600 hover:bg-navy-500 text-white text-sm font-medium rounded-lg transition-colors">
-                Backup Now
+            <button wire:click="createBackup" wire:loading.attr="disabled" class="px-5 py-2 bg-navy-600 hover:bg-navy-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                <svg wire:loading wire:target="createBackup" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Backup Now
             </button>
         </div>
 
-        {{-- Restore Confirmation --}}
-        @if ($showRestoreConfirm)
-            <div class="mb-6 bg-red-50 border-2 border-red-300 rounded-lg px-6 py-5">
-                <h3 class="text-sm font-bold text-red-800 mb-2">Confirm Database Restore</h3>
-                <p class="text-sm text-red-700 mb-3">This will <strong>replace your current database and files</strong> with the backup. A safety copy will be saved first.</p>
-                <div class="flex gap-2">
-                    <button wire:click="restore" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg">Yes, Restore</button>
-                    <button wire:click="$set('showRestoreConfirm', false)" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg">Cancel</button>
-                </div>
-            </div>
-        @endif
+        {{-- Restore Confirmation is shown as a modal below --}}
 
         {{-- Local Backups --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -79,7 +69,7 @@
                             <td class="px-4 py-2">{{ $backup['created_at'] }}</td>
                             <td class="px-4 py-2 text-right">
                                 <button wire:click="confirmRestore('{{ addslashes($backup['path']) }}')" class="text-navy-600 hover:text-navy-800 text-xs font-medium mr-2">Restore</button>
-                                <button wire:click="deleteBackup('{{ addslashes($backup['path']) }}')" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+                                <button wire:click="confirmDeleteBackup('{{ addslashes($backup['path']) }}')" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
                             </td>
                         </tr>
                     @empty
@@ -89,4 +79,26 @@
             </table>
         </div>
     </div>
+
+    @if ($showRestoreConfirm)
+        <x-confirm-dialog
+            title="Restore Database"
+            message="This will REPLACE your current database and all files with the selected backup. A safety copy will be saved first. This cannot be undone."
+            confirm-label="Yes, Restore Now"
+            wire-confirm="restore"
+            wire-cancel="$set('showRestoreConfirm', false)"
+            variant="danger"
+        />
+    @endif
+
+    @if ($showDeleteConfirm)
+        <x-confirm-dialog
+            title="Delete Backup"
+            message="Are you sure you want to permanently delete this backup file? This cannot be undone."
+            confirm-label="Delete"
+            wire-confirm="deleteBackup"
+            wire-cancel="cancelDeleteBackup"
+            variant="danger"
+        />
+    @endif
 </div>

@@ -26,6 +26,12 @@ class SupplierExpenseReport extends Component
 
     public function generate(): void
     {
+        $this->validate([
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+        ]);
+
         $this->generated = true;
     }
 

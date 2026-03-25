@@ -110,7 +110,7 @@
                     </div>
                     <div class="flex justify-end gap-3 pt-2">
                         <button type="button" wire:click="closeModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors">{{ $editingId ? 'Update' : 'Save' }}</button>
+                        <button type="submit" wire:loading.attr="disabled" class="px-4 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors disabled:opacity-50"><svg wire:loading wire:target="save" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>{{ $editingId ? 'Update' : 'Save' }}</button>
                     </div>
                 </form>
             </div>
@@ -141,7 +141,18 @@
                                         {{ $row['name'] }}
                                     </td>
                                     <td class="py-2">
-                                        <input wire:model="pricingRows.{{ $index }}.price" type="text" placeholder="—"
+                                        <input type="text" inputmode="decimal" placeholder="—"
+                                               x-data="{
+                                                   raw: @entangle('pricingRows.' . $index . '.price'),
+                                                   _d: '',
+                                                   f: false,
+                                                   init() { this._d = this.fmt(this.raw); this.$watch('raw', v => { if (!this.f) this._d = this.fmt(v) }) },
+                                                   fmt(v) { if (!v || v === '') return ''; const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? String(v) : n.toLocaleString('en-US', {maximumFractionDigits:2}); }
+                                               }"
+                                               x-model="_d"
+                                               x-on:focus="f = true; _d = String(raw).replace(/,/g, '')"
+                                               x-on:blur="f = false; let c = String(_d).replace(/,/g, ''); raw = c; _d = fmt(raw)"
+                                               x-on:input="raw = String(_d).replace(/,/g, '')"
                                                class="w-full text-right px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-navy-400 focus:border-navy-400 outline-none tabular-nums">
                                     </td>
                                 </tr>
@@ -151,7 +162,7 @@
                 </div>
                 <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
                     <button wire:click="closePricing" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
-                    <button wire:click="savePricing" class="px-4 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors">Save Pricing</button>
+                    <button wire:click="savePricing" wire:loading.attr="disabled" class="px-4 py-2 text-sm font-medium text-white bg-navy-600 hover:bg-navy-500 rounded-lg transition-colors disabled:opacity-50"><svg wire:loading wire:target="savePricing" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Save Pricing</button>
                 </div>
             </div>
         </div>

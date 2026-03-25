@@ -28,6 +28,13 @@ class LedgerReport extends Component
 
     public function generate(): void
     {
+        $this->validate([
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+            'event_type' => 'required|in:all,sale,payment,recovery,return,closure,activation,purchase,loss',
+            'customer_id' => 'nullable|exists:customers,id',
+        ]);
+
         $this->generated = true;
     }
 

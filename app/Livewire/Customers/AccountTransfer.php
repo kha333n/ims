@@ -57,6 +57,7 @@ class AccountTransfer extends Component
         $this->validate([
             'customer_id' => 'required|exists:customers,id',
             'to_recovery_man_id' => 'required|exists:employees,id',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $customer = Customer::findOrFail($this->customer_id);

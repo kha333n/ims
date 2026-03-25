@@ -69,8 +69,14 @@ class ProblemEntry extends Component
     {
         $this->validate([
             'account_id' => 'required|exists:accounts,id',
+            'manager' => 'nullable|string|max:255',
+            'checker' => 'nullable|string|max:255',
+            'branch' => 'nullable|string|max:255',
             'problem_text' => 'required|string|max:1000',
+            'previous_promise_date' => 'nullable|date',
             'new_commitment_date' => 'nullable|date',
+            'action_taken' => 'nullable|string|max:1000',
+            'closed' => 'boolean',
         ]);
 
         Problem::create([

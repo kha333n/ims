@@ -143,6 +143,8 @@ class PurchasePoint extends Component
     {
         $this->validate([
             'purchase_date' => 'required|date',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
         ]);
 

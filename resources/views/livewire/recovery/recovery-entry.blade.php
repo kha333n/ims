@@ -138,7 +138,27 @@
                                 <td class="px-3 py-2 text-gray-600 truncate max-w-40">{{ $account->customer->home_address ?? '—' }}</td>
                                 <td class="px-3 py-2 text-right tabular-nums font-medium text-red-600">@money($account->remaining_amount)</td>
                                 <td class="px-3 py-1 text-right" x-on:click.stop>
-                                    <input wire:model="amounts.{{ $account->id }}" type="number" step="0.01" min="1"
+                                    <input type="text" inputmode="decimal"
+                                           x-data="{
+                                               raw: @entangle('amounts.' . $account->id),
+                                               get display() { return this._display },
+                                               set display(v) { this._display = v },
+                                               _display: '',
+                                               focused: false,
+                                               init() {
+                                                   this._display = this.fmt(this.raw);
+                                                   this.$watch('raw', v => { if (!this.focused) this._display = this.fmt(v) });
+                                               },
+                                               fmt(v) {
+                                                   if (!v || v === '') return '';
+                                                   const n = parseFloat(String(v).replace(/,/g, ''));
+                                                   return isNaN(n) ? String(v) : n.toLocaleString('en-US', {maximumFractionDigits:2});
+                                               }
+                                           }"
+                                           x-model="display"
+                                           x-on:focus="focused = true; display = String(raw).replace(/,/g, '')"
+                                           x-on:blur="focused = false; let c = String(display).replace(/,/g, ''); raw = c === '' ? '0' : c; display = fmt(raw)"
+                                           x-on:input="raw = String(display).replace(/,/g, '')"
                                            class="w-full px-2 py-1 border border-gray-300 rounded text-xs text-right tabular-nums focus:ring-1 focus:ring-navy-400 outline-none"
                                            tabindex="-1"
                                            x-on:keydown.escape="$el.blur(); $el.closest('tbody').focus()">
@@ -172,8 +192,8 @@
                         <span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono">Tab</kbd> Edit amount</span>
                         <span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono">Esc</kbd> Back to rows</span>
                     </div>
-                    <button wire:click="updateStatus" class="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors">
-                        Update Status
+                    <button wire:click="updateStatus" wire:loading.attr="disabled" class="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                        <svg wire:loading wire:target="updateStatus" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Update Status
                     </button>
                 </div>
             @endif

@@ -25,6 +25,8 @@ class AccountClosure extends Component
 
     public string $discount_slip = '';
 
+    public bool $showCloseConfirm = false;
+
     // Summary
     public ?array $actionSummary = null;
 
@@ -68,12 +70,25 @@ class AccountClosure extends Component
         $this->accountInfo = null;
     }
 
-    public function closeAccount(): void
+    public function confirmClose(): void
     {
         $this->validate([
             'account_id' => 'required|exists:accounts,id',
             'discount_amount' => 'required|numeric|min:0',
+            'discount_slip' => 'nullable|string|max:255',
         ]);
+
+        $this->showCloseConfirm = true;
+    }
+
+    public function cancelClose(): void
+    {
+        $this->showCloseConfirm = false;
+    }
+
+    public function closeAccount(): void
+    {
+        $this->showCloseConfirm = false;
 
         $account = Account::findOrFail($this->account_id);
         $discount = parseMoney($this->discount_amount);

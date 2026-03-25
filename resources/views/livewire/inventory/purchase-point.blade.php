@@ -38,8 +38,7 @@
                             <x-searchable-select wire-model="selected_product_id" :options="$productOpts" label="Product" placeholder="Search product..." />
                         </div>
                         <div class="w-32">
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Rate (PKR)</label>
-                            <input wire:model="line_rate" type="number" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none">
+                            <x-money-input wire-model="line_rate" label="Rate (PKR)" />
                         </div>
                         <div class="w-24">
                             <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
@@ -90,7 +89,9 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                         <textarea wire:model="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-navy-400 outline-none resize-none mb-3"></textarea>
                         <div class="flex justify-end">
-                            <button wire:click="savePurchase" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors">Save Purchase</button>
+                            <button wire:click="savePurchase" wire:loading.attr="disabled" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                                <svg wire:loading wire:target="savePurchase" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Save Purchase
+                            </button>
                         </div>
                     </div>
                 @endif

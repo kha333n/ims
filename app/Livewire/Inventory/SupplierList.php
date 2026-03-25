@@ -161,6 +161,13 @@ class SupplierList extends Component
             return;
         }
 
+        $this->validate([
+            'pricingRows.*.price' => 'nullable|numeric|min:0',
+        ], [
+            'pricingRows.*.price.numeric' => 'Each price must be a valid number.',
+            'pricingRows.*.price.min' => 'Price cannot be negative.',
+        ]);
+
         foreach ($this->pricingRows as $row) {
             $price = trim($row['price']);
             if ($price === '') {

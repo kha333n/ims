@@ -73,6 +73,7 @@ class UserManagement extends Component
             'edit_name' => 'required|string|max:255',
             'edit_username' => 'required|string|max:50|unique:users,username,'.$this->editingId,
             'edit_role' => 'required|in:owner,sale_man,recovery_man',
+            'edit_is_active' => 'required|boolean',
         ];
 
         if ($this->edit_password) {

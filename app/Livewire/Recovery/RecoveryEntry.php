@@ -72,6 +72,15 @@ class RecoveryEntry extends Component
             return;
         }
 
+        foreach ($selected as $accountId) {
+            $amount = $this->amounts[$accountId] ?? '';
+            if ($amount !== '' && (! is_numeric($amount) || (float) $amount <= 0)) {
+                $this->addError("amounts.{$accountId}", 'Amount must be a positive number.');
+
+                return;
+            }
+        }
+
         // Check for duplicates before processing
         $dupes = 0;
         foreach ($selected as $accountId) {

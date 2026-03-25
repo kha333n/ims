@@ -245,6 +245,7 @@ class NewSale extends Component
         $rules = [
             'customer_id' => 'required|exists:customers,id',
             'sale_date' => 'required|date',
+            'slip_number' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             'advance' => 'required|numeric|min:0',
             'discount' => 'required|numeric|min:0',

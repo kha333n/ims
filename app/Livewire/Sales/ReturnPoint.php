@@ -29,6 +29,8 @@ class ReturnPoint extends Component
     // Summary
     public ?array $returnSummary = null;
 
+    public bool $showReturnConfirm = false;
+
     // Return fields
     public string $returning_amount = '';
 
@@ -84,7 +86,7 @@ class ReturnPoint extends Component
         $this->accountInfo = null;
     }
 
-    public function processReturn(): void
+    public function confirmReturn(): void
     {
         $this->validate([
             'account_id' => 'required|exists:accounts,id',
@@ -94,6 +96,18 @@ class ReturnPoint extends Component
             'reason' => 'nullable|string|max:500',
             'inventory_action' => 'required|in:restock,scrap',
         ]);
+
+        $this->showReturnConfirm = true;
+    }
+
+    public function cancelReturn(): void
+    {
+        $this->showReturnConfirm = false;
+    }
+
+    public function processReturn(): void
+    {
+        $this->showReturnConfirm = false;
 
         $returningAmount = parseMoney($this->returning_amount);
 
