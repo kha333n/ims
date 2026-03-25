@@ -64,7 +64,7 @@ class RecoveryManListTest extends TestCase
             'type' => 'recovery_man',
             'area' => 'Saddar',
             'rank' => 'Senior',
-            'salary' => 25000,
+            'salary' => 2500000,
         ]);
     }
 

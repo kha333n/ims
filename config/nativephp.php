@@ -83,11 +83,64 @@ return [
      * You may use glob / wildcard patterns here.
      */
     'cleanup_exclude_files' => [
+        // Build artifacts & output
         'build',
+        'dist',
         'temp',
         'content',
         'node_modules',
+
+        // Tests & test caches
+        'tests',
         '*/tests',
+        'phpunit.xml',
+        'phpunit.dusk.xml',
+        '.phpunit.cache',
+        '.phpunit.result.cache',
+
+        // Documentation, planning, specs
+        '*.md',
+        '*.pdf',
+        '*.txt',
+
+        // Version control
+        '.git',
+        '.gitignore',
+        '.gitattributes',
+
+        // IDE & editor config
+        '.vscode',
+        '.idea',
+        '.editorconfig',
+
+        // AI & agent config (Claude, Copilot, etc.)
+        '.ai',
+        '.claude',
+        '.mcp.json',
+        'boost.json',
+
+        // Env files (except .env which NativePHP handles)
+        '.env.example',
+        '.env.dusk.local',
+        '.env.testing',
+
+        // Package manager lock files (not needed at runtime)
+        'package.json',
+        'package-lock.json',
+
+        // Frontend source (already compiled by Vite into public/build/)
+        'resources/js',
+        'resources/css',
+        'vite.config.js',
+
+        // Database dev files (migrations are needed, seeders are needed, but SQLite dev DB is not)
+        'database/database.sqlite',
+
+        // Storage logs & caches (fresh at runtime)
+        'storage/logs',
+        'storage/framework/cache',
+        'storage/framework/sessions',
+        'storage/framework/views',
     ],
 
     /**
@@ -156,7 +209,7 @@ return [
      * Define your own scripts to run before and after the build process.
      */
     'prebuild' => [
-        // 'npm run build',
+        // npm run build is handled by build:production command before native:build
     ],
 
     'postbuild' => [

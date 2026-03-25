@@ -42,4 +42,13 @@ return [
     | Get your DSN from https://sentry.io
     */
     'sentry_dsn' => env('SENTRY_LARAVEL_DSN', 'https://e343747227bcc22ef8ab6cedc1dbdb4e@o4506540143542272.ingest.us.sentry.io/4511100662317056'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Data Seeding
+    |--------------------------------------------------------------------------
+    | Set IMS_DEMO_SEED=true in .env to seed demo data on first setup.
+    | Used instead of APP_DEBUG because NativePHP overrides APP_DEBUG at runtime.
+    */
+    'demo_seed' => env('IMS_DEMO_SEED', false),
 ];

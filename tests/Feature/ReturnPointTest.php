@@ -24,7 +24,7 @@ class ReturnPointTest extends TestCase
 
     private function createSaleData(): array
     {
-        $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-111']);
+        $customer = Customer::create(['name' => 'Ahmad Khan', 'mobile' => '0300-1112233']);
         $rm = Employee::create(['name' => 'Hassan RM', 'type' => 'recovery_man']);
         $product = Product::create(['name' => 'LED TV', 'sale_price' => 5000000, 'quantity' => 9]);
         $account = Account::create([
@@ -63,7 +63,7 @@ class ReturnPointTest extends TestCase
             ->set('customer_id', $customer->id)
             ->set('account_id', $account->id)
             ->assertSet('accountInfo.customer_name', 'Ahmad Khan')
-            ->assertSet('accountInfo.phone', '0300-111');
+            ->assertSet('accountInfo.phone', '0300-1112233');
     }
 
     public function test_can_process_return_with_restock(): void
@@ -114,7 +114,7 @@ class ReturnPointTest extends TestCase
     public function test_validates_required_fields(): void
     {
         Livewire::test(ReturnPoint::class)
-            ->call('processReturn')
+            ->call('confirmReturn')
             ->assertHasErrors(['account_id', 'account_item_id', 'returning_amount']);
     }
 }

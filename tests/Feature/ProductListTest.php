@@ -188,7 +188,7 @@ class ProductListTest extends TestCase
 
         $product = Product::where('name', 'Product With Image')->first();
         $this->assertNotNull($product->image_path);
-        Storage::disk('local')->assertExists($product->image_path);
+        Storage::disk('persistent')->assertExists($product->image_path);
     }
 
     // ── Edit Product Tests ─────────────────────────────────────────────────────

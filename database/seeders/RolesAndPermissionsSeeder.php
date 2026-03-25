@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -65,20 +63,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'recovery.entry',
         ]);
 
-        // Default admin account (always created if missing)
-        if (User::where('username', 'admin')->doesntExist()) {
-            $recoveryKey = strtoupper(Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4));
-
-            $admin = User::create([
-                'name' => 'Administrator',
-                'username' => 'admin',
-                'password' => 'admin',
-                'role' => 'owner',
-                'is_active' => true,
-                'recovery_key' => bcrypt($recoveryKey),
-            ]);
-
-            $admin->assignRole('owner');
-        }
+        // Admin account is created by the FirstRunSetup wizard, not here.
     }
 }

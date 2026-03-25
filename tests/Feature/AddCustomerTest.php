@@ -68,7 +68,7 @@ class AddCustomerTest extends TestCase
     {
         Livewire::test(AddCustomer::class)
             ->set('name', 'Ahmad Khan')
-            ->set('mobile', '0300-111')
+            ->set('mobile', '0300-1112233')
             ->call('save')
             ->assertSet('savedSummary.name', 'Ahmad Khan')
             ->assertSet('name', '')

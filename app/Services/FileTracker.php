@@ -21,7 +21,7 @@ class FileTracker
      */
     public function logChange(string $relativePath, string $action = 'modified'): void
     {
-        $fullPath = storage_path('app'.DIRECTORY_SEPARATOR.$relativePath);
+        $fullPath = config('filesystems.disks.persistent.root').DIRECTORY_SEPARATOR.$relativePath;
         $hash = null;
         $size = null;
 
@@ -47,7 +47,7 @@ class FileTracker
     public function scanForChanges(): int
     {
         $changes = 0;
-        $storageDir = storage_path('app');
+        $storageDir = config('filesystems.disks.persistent.root');
 
         // Build a map of last known state from the log
         $knownFiles = FileChangeLog::query()

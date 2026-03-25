@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\LicenseManager;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -13,6 +15,17 @@ use Spatie\Permission\Models\Role;
 #[Layout('components.layouts.auth')]
 class FirstRunSetup extends Component
 {
+    // Step tracking: 1=Company, 2=Owner Account, 3=Recovery Key, 4=License
+    public int $step = 1;
+
+    // Step 1: Company details
+    public string $company_name = '';
+
+    public string $company_address = '';
+
+    public string $company_phone = '';
+
+    // Step 2: Owner account
     public string $name = '';
 
     public string $username = 'admin';
@@ -21,9 +34,30 @@ class FirstRunSetup extends Component
 
     public string $password_confirmation = '';
 
+    // Step 3: Recovery key display
     public ?string $recoveryKey = null;
 
-    public function setup(): void
+    // Step 4: License
+    public string $licenseKey = '';
+
+    public ?array $licenseResult = null;
+
+    public function saveCompany(): void
+    {
+        $this->validate([
+            'company_name' => 'required|string|max:255',
+            'company_address' => 'nullable|string|max:500',
+            'company_phone' => 'nullable|string|max:20',
+        ]);
+
+        Setting::set('company_name', $this->company_name);
+        Setting::set('company_address', $this->company_address);
+        Setting::set('company_phone', $this->company_phone);
+
+        $this->step = 2;
+    }
+
+    public function createOwner(): void
     {
         if (User::count() > 0) {
             $this->redirect(route('login'));
@@ -37,13 +71,14 @@ class FirstRunSetup extends Component
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        // Ensure roles exist
         if (Role::count() === 0) {
-            Artisan::call('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true, '--no-interaction' => true]);
         }
 
-        // Generate recovery key
-        $recoveryKey = strtoupper(Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.Str::random(4));
+        $recoveryKey = strtoupper(
+            Str::random(4).'-'.Str::random(4).'-'.Str::random(4).'-'.
+            Str::random(4).'-'.Str::random(4).'-'.Str::random(4)
+        );
 
         $user = User::create([
             'name' => $this->name,
@@ -56,22 +91,68 @@ class FirstRunSetup extends Component
 
         $user->assignRole('owner');
 
+        // Seed demo data if IMS_DEMO_SEED=true in .env
+        // (NativePHP overrides APP_DEBUG at runtime, so we use our own flag)
+        if (config('ims.demo_seed')) {
+            Artisan::call('db:seed', ['--class' => 'SupplierSeeder', '--force' => true, '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'ProductSeeder', '--force' => true, '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'EmployeeSeeder', '--force' => true, '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'CustomerSeeder', '--force' => true, '--no-interaction' => true]);
+            Artisan::call('db:seed', ['--class' => 'DemoDataSeeder', '--force' => true, '--no-interaction' => true]);
+        }
+
         $this->recoveryKey = $recoveryKey;
+        $this->step = 3;
+    }
+
+    public function proceedToLicense(): void
+    {
+        $this->step = 4;
+    }
+
+    public function activateLicense(): void
+    {
+        $this->validate([
+            'licenseKey' => 'required|string|min:8',
+        ]);
+
+        $manager = app(LicenseManager::class);
+        $result = $manager->activate($this->licenseKey);
+
+        if ($result['success']) {
+            $this->licenseResult = [
+                'type' => 'success',
+                'message' => $result['message'],
+            ];
+        } else {
+            $this->licenseResult = [
+                'type' => 'error',
+                'message' => $result['message'],
+            ];
+        }
     }
 
     public function continueToApp(): void
     {
         $user = User::where('role', 'owner')->first();
-        Auth::login($user, true);
-        $user->update(['last_login_at' => now()]);
+
+        if ($user) {
+            Auth::login($user, true);
+            $user->update(['last_login_at' => now()]);
+        }
 
         $this->redirect(route('dashboard'));
     }
 
     public function render()
     {
-        if (User::count() > 0 && ! $this->recoveryKey) {
-            $this->redirect(route('login'));
+        if (User::count() > 0 && $this->step < 3) {
+            $manager = app(LicenseManager::class);
+            if ($manager->isValid()) {
+                $this->redirect(route('dashboard'));
+            } else {
+                $this->redirect(route('license'));
+            }
         }
 
         return view('livewire.auth.first-run-setup');

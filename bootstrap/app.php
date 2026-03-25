@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SubscriptionGate;
+use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,7 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
             SubscriptionGate::class,
         ]);
 
-        $middleware->redirectGuestsTo('/login');
+        $middleware->redirectGuestsTo(function () {
+            // First-run: no users yet → send to setup wizard, not login
+            try {
+                if (User::count() === 0) {
+                    return route('setup');
+                }
+            } catch (Throwable) {
+                // Table might not exist yet
+            }
+
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);

@@ -33,9 +33,18 @@ class SubscriptionGate
             return $next($request);
         }
 
-        // Allow Livewire update requests (NativePHP adds hash: livewire-XXXX/update)
+        // Allow Livewire update requests
         if ($request->is('livewire/*') || $request->is('livewire-*/update') || $request->is('livewire/update')) {
             return $next($request);
+        }
+
+        // First-run check: if no users exist, redirect to setup BEFORE license check
+        try {
+            if (User::count() === 0) {
+                return redirect()->route('setup');
+            }
+        } catch (\Throwable) {
+            // Table might not exist yet
         }
 
         // Integrity check
@@ -43,18 +52,14 @@ class SubscriptionGate
             abort(403, 'Application integrity check failed. Files may have been modified.');
         }
 
-        // License check
+        // License check — users exist but license invalid
+        // If not logged in, send to login first; if logged in, send to license page
         if (! $this->license->isValid()) {
-            return redirect()->route('license');
-        }
-
-        // First-run check: if no users exist, redirect to setup
-        try {
-            if (User::count() === 0 && ! $request->routeIs('setup')) {
-                return redirect()->route('setup');
+            if (! auth()->check()) {
+                return redirect()->route('login');
             }
-        } catch (\Throwable) {
-            // Table might not exist yet
+
+            return redirect()->route('license');
         }
 
         return $next($request);

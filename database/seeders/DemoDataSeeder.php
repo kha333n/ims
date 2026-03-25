@@ -26,7 +26,7 @@ class DemoDataSeeder extends Seeder
         $suppliers = Supplier::all();
 
         if ($customers->isEmpty() || $products->isEmpty() || $saleMen->isEmpty() || $recoveryMen->isEmpty()) {
-            $this->command->warn('Run SupplierSeeder, ProductSeeder, EmployeeSeeder, CustomerSeeder first.');
+            $this->command?->warn('Run SupplierSeeder, ProductSeeder, EmployeeSeeder, CustomerSeeder first.');
 
             return;
         }

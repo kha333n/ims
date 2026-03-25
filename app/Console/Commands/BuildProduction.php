@@ -7,97 +7,75 @@ use Illuminate\Console\Command;
 class BuildProduction extends Command
 {
     protected $signature = 'build:production
-        {--skip-build : Only prepare staging dir, do not run native:build}
+        {--skip-build : Only prepare, do not run native:build}
         {--skip-tests : Skip running test suite}
-        {--debug : Enable APP_DEBUG=true in the build for troubleshooting}';
+        {--debug : Enable APP_DEBUG=true in the build}';
 
-    protected $description = 'Full production build pipeline: copy → obfuscate → integrity → clean → build Win64. Does NOT modify project files.';
+    protected $description = 'Build the IMS desktop app. Runs directly without staging copy.';
 
-    private string $stagingDir;
+    private ?string $originalEnv = null;
 
     public function handle(): int
     {
         $startTime = microtime(true);
-        $this->stagingDir = base_path('build/.build-staging');
 
         $this->info('=== IMS Production Build ===');
-        $this->info('All changes happen in build/.build-staging/ — your project files are untouched.');
         $this->newLine();
 
-        // Step 1: Run tests on the original source
+        // Step 1: Run tests
         if (! $this->option('skip-tests')) {
-            $this->step('1/8', 'Running test suite');
-            $testEnv = 'APP_ENV=testing';
-            if (DIRECTORY_SEPARATOR === '\\') {
-                $testEnv = 'set APP_ENV=testing&&';
-            } else {
-                $testEnv = 'APP_ENV=testing';
-            }
-            if ($this->runProcess($testEnv.' php artisan test --compact') !== 0) {
+            $this->step('1/6', 'Running test suite');
+            if ($this->runProcess($this->envPrefix('APP_ENV=testing').'php artisan test --compact') !== 0) {
                 $this->error('Tests failed! Fix tests before building.');
 
                 return self::FAILURE;
             }
         } else {
-            $this->step('1/8', 'Skipping tests (--skip-tests)');
+            $this->step('1/6', 'Skipping tests (--skip-tests)');
         }
 
-        // Step 2: Build frontend assets in the project (they'll be copied)
-        $this->step('2/8', 'Building frontend assets');
+        // Step 2: Build frontend assets
+        $this->step('2/6', 'Building frontend assets');
         $this->runProcess('npm run build');
 
-        // Step 3: Copy project to staging directory
-        $this->step('3/8', 'Creating staging copy');
-        $this->createStagingCopy();
+        // Step 3: Swap .env for production
+        $this->step('3/6', 'Preparing production .env');
+        $this->swapEnv();
 
-        // Step 4: Obfuscation disabled — integrity check is the protection layer
-        $this->step('4/8', 'Skipping obfuscation (integrity check enforced instead)');
+        // Step 4: Generate integrity manifest
+        $this->step('4/6', 'Generating integrity manifest');
+        $this->generateIntegrity();
 
-        // Step 5: Remove dev files from staging
-        $this->step('5/8', 'Cleaning non-production files');
-        $this->cleanStaging();
-
-        // Step 6: Dev license keys kept until license server is built
-        $this->step('6/8', 'Dev license keys: KEPT (no license server yet)');
-
-        // Step 7: Generate integrity manifest LAST (on final files)
-        $this->step('7/8', 'Generating integrity manifest');
-        $this->generateIntegrityInStaging();
-        // TODO: When license server is ready, uncomment:
-        // $this->removeDevLicenses();
-
-        // Step 8: Build from staging directory
+        // Step 5: Build with NativePHP (uses cleanup_exclude_files from config)
         if (! $this->option('skip-build')) {
-            $this->step('8/8', 'Building Windows x64 installer from staging');
-            $buildResult = $this->runProcess(
-                'cd '.escapeshellarg($this->stagingDir).' && php artisan native:build win'
-            );
+            $this->step('5/6', 'Building Windows x64 installer');
+            $buildResult = $this->runProcess('php artisan native:build win x64 --no-interaction');
+
+            // Always restore .env
+            $this->restoreEnv();
 
             if ($buildResult !== 0) {
                 $this->error('native:build failed!');
 
                 return self::FAILURE;
             }
-
-            // Copy dist/ back to project root
-            $stagingDist = $this->stagingDir.'/dist';
-            $projectDist = base_path('dist');
-            if (is_dir($stagingDist)) {
-                if (! is_dir($projectDist)) {
-                    mkdir($projectDist, 0755, true);
-                }
-                $this->copyDirectory($stagingDist, $projectDist);
-                $this->line('  Installer copied to dist/');
-            }
         } else {
-            $this->step('8/8', 'Skipping native:build (--skip-build)');
-            $this->info("Staging directory ready at: {$this->stagingDir}");
+            $this->step('5/6', 'Skipping native:build (--skip-build)');
+            $this->restoreEnv();
         }
+
+        // Step 6: Clean up integrity.bin from project (only needed in build)
+        $this->step('6/6', 'Cleanup');
+        @unlink(base_path('integrity.bin'));
+        $this->line('  Removed integrity.bin from project root.');
 
         $elapsed = round(microtime(true) - $startTime, 1);
         $this->newLine();
         $this->info("=== Build complete in {$elapsed}s ===");
-        $this->info('Your project files remain unchanged.');
+
+        if (is_dir(base_path('dist'))) {
+            $this->info('Installer at: dist/');
+        }
 
         return self::SUCCESS;
     }
@@ -109,149 +87,39 @@ class BuildProduction extends Command
         $this->line(str_repeat('-', 50));
     }
 
-    private function createStagingCopy(): void
+    private function swapEnv(): void
     {
-        // Clean previous staging
-        if (is_dir($this->stagingDir)) {
-            $this->line('  Removing previous staging dir...');
-            $this->deleteDirectory($this->stagingDir);
-        }
+        $envPath = base_path('.env');
+        $this->originalEnv = file_exists($envPath) ? file_get_contents($envPath) : null;
 
-        $this->line('  Copying project to staging...');
-
-        $excludeDirs = [
-            '.git',
-            'node_modules',
-            'build/.build-staging',
-            'build/yakpro-po/vendor',
-            'dist',
-            '.idea',
-            '.vscode',
-            '.fleet',
-            '.nova',
-            '.zed',
-            'storage/logs',
-            'storage/framework/cache',
-            'storage/framework/sessions',
-            'storage/framework/views',
-        ];
-
-        $excludeFiles = [
-            '.env',
-            '.env.backup',
-            '.phpunit.result.cache',
-        ];
-
-        $source = base_path();
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        $count = 0;
-        foreach ($iterator as $item) {
-            $relativePath = str_replace($source.DIRECTORY_SEPARATOR, '', $item->getPathname());
-            $relativePath = str_replace('\\', '/', $relativePath);
-
-            // Check excludes
-            $skip = false;
-            foreach ($excludeDirs as $exc) {
-                if (str_starts_with($relativePath, $exc.'/') || $relativePath === $exc) {
-                    $skip = true;
-                    break;
-                }
-            }
-            if ($skip) {
-                continue;
-            }
-
-            if ($item->isFile() && in_array(basename($relativePath), $excludeFiles)) {
-                continue;
-            }
-
-            $target = $this->stagingDir.DIRECTORY_SEPARATOR.$relativePath;
-
-            if ($item->isDir()) {
-                if (! is_dir($target)) {
-                    mkdir($target, 0755, true);
-                }
-            } elseif ($item->isFile()) {
-                $targetDir = dirname($target);
-                if (! is_dir($targetDir)) {
-                    mkdir($targetDir, 0755, true);
-                }
-                copy($item->getPathname(), $target);
-                $count++;
-            }
-        }
-
-        // Create production .env
         $sentryDsn = config('ims.sentry_dsn', '');
+        $isDebug = $this->option('debug');
         $envContent = "APP_NAME=\"Installment Management System\"\n"
             ."APP_ENV=production\n"
             .'APP_KEY='.config('app.key')."\n"
-            .'APP_DEBUG='.($this->option('debug') ? 'true' : 'false')."\n"
+            .'APP_DEBUG='.($isDebug ? 'true' : 'false')."\n"
             ."APP_URL=http://localhost\n"
-            ."LOG_CHANNEL=single\n"
             ."DB_CONNECTION=sqlite\n"
-            ."SENTRY_LARAVEL_DSN={$sentryDsn}\n"
-            ."SENTRY_ENABLE_LOGS=true\n"
+            .'IMS_DEMO_SEED='.($isDebug ? 'true' : 'false')."\n"
             ."LOG_CHANNEL=stack\n"
-            ."LOG_STACK=single,sentry_logs\n";
+            ."LOG_STACK=single,sentry_logs\n"
+            ."SENTRY_LARAVEL_DSN={$sentryDsn}\n"
+            ."SENTRY_ENABLE_LOGS=true\n";
 
-        file_put_contents($this->stagingDir.'/.env', $envContent);
-
-        // Ensure required storage dirs exist
-        foreach (['app', 'framework/cache', 'framework/sessions', 'framework/views', 'logs'] as $dir) {
-            $path = $this->stagingDir.'/storage/'.$dir;
-            if (! is_dir($path)) {
-                mkdir($path, 0755, true);
-            }
-        }
-
-        $this->line("  Copied {$count} files to staging.");
+        file_put_contents($envPath, $envContent);
+        $this->line('  Production .env written (original backed up in memory).');
     }
 
-    private function obfuscateStaging(): void
+    private function restoreEnv(): void
     {
-        $yakpro = base_path('build/yakpro-po/vendor/pmdunggh/yakpro-po/yakpro-po.php');
-        $config = base_path('build/yakpro.cnf');
-
-        if (! file_exists($yakpro)) {
-            $this->warn('yakpro-po not installed. Run: cd build/yakpro-po && composer install');
-
-            return;
-        }
-
-        $appDir = $this->stagingDir.'/app';
-        $tempOutput = $this->stagingDir.'/.obfuscated-app';
-
-        $cmd = sprintf(
-            'php %s --config-file %s -o %s %s 2>&1',
-            escapeshellarg($yakpro),
-            escapeshellarg($config),
-            escapeshellarg($tempOutput),
-            escapeshellarg($appDir)
-        );
-
-        $result = $this->runProcess($cmd);
-
-        if ($result === 0 && is_dir($tempOutput)) {
-            $this->deleteDirectory($appDir);
-            rename($tempOutput, $appDir);
-            $this->line('  PHP source obfuscated.');
-        } else {
-            $this->warn('  Obfuscation had issues. Continuing with original source.');
-            if (is_dir($tempOutput)) {
-                $this->deleteDirectory($tempOutput);
-            }
+        if ($this->originalEnv !== null) {
+            file_put_contents(base_path('.env'), $this->originalEnv);
+            $this->line('  Original .env restored.');
         }
     }
 
-    private function generateIntegrityInStaging(): void
+    private function generateIntegrity(): void
     {
-        // Only hash the critical security files — must match IntegrityChecker::CRITICAL_FILES
         $criticalFiles = [
             'app/Http/Middleware/SubscriptionGate.php',
             'app/Services/LicenseManager.php',
@@ -265,7 +133,7 @@ class BuildProduction extends Command
 
         $hashes = [];
         foreach ($criticalFiles as $relativePath) {
-            $fullPath = $this->stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $fullPath = base_path($relativePath);
             if (file_exists($fullPath)) {
                 $hashes[$relativePath] = hash_file('sha256', $fullPath);
             }
@@ -275,79 +143,18 @@ class BuildProduction extends Command
         $data = json_encode($hashes);
         $signature = hash_hmac('sha256', $data, config('ims.app_secret'));
 
-        file_put_contents($this->stagingDir.'/integrity.bin', $signature."\n".$data);
-        $this->line('  Integrity manifest generated ('.count($hashes).' critical files hashed).');
+        file_put_contents(base_path('integrity.bin'), $signature."\n".$data);
+        $this->line('  Integrity manifest generated ('.count($hashes).' files hashed).');
     }
 
-    private function cleanStaging(): void
+    private function envPrefix(string $envVar): string
     {
-        $filesToRemove = [
-            '*.md',
-            'CLAUDE.md',
-            '06-task-list.md',
-            '.env.example',
-            'phpunit.xml',
-            '.editorconfig',
-            '.gitattributes',
-            '.gitignore',
-            'integrity.bin.example',
-        ];
-
-        $dirsToRemove = [
-            'tests',
-            'build',
-            '.github',
-            '.claude',
-            'database/seeders', // Demo data seeders
-        ];
-
-        $count = 0;
-
-        foreach ($filesToRemove as $pattern) {
-            foreach (glob($this->stagingDir.'/'.$pattern) as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                    $count++;
-                }
-            }
+        // Windows: use 'set VAR=val&&' syntax; Unix: use 'VAR=val ' prefix
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return 'set '.$envVar.'&& ';
         }
 
-        foreach ($dirsToRemove as $dir) {
-            $path = $this->stagingDir.'/'.$dir;
-            if (is_dir($path)) {
-                $this->deleteDirectory($path);
-                $count++;
-            }
-        }
-
-        $this->line("  Removed {$count} non-production items.");
-    }
-
-    private function removeDevLicenses(): void
-    {
-        $file = $this->stagingDir.'/app/Services/LicenseManager.php';
-        if (! file_exists($file)) {
-            return;
-        }
-
-        $content = file_get_contents($file);
-
-        // Remove the DEV_LICENSES constant and the dev key check block
-        $content = preg_replace(
-            '/\s*\/\*\*\s*\* Dev\/test license.*?private const DEV_LICENSES\s*=\s*\[.*?\];\s*/s',
-            "\n",
-            $content
-        );
-
-        // Remove the dev license activation block in activate()
-        $content = preg_replace(
-            '/\s*\/\/ Check for dev\/test licenses.*?return \[\'success\'.*?\'days\'\];\s*\}\s*/s',
-            "\n",
-            $content
-        );
-
-        file_put_contents($file, $content);
-        $this->line('  Dev license keys removed.');
+        return $envVar.' ';
     }
 
     private function runProcess(string $command): int
@@ -356,50 +163,5 @@ class BuildProduction extends Command
         passthru($command, $exitCode);
 
         return $exitCode;
-    }
-
-    private function copyDirectory(string $source, string $dest): void
-    {
-        if (! is_dir($dest)) {
-            mkdir($dest, 0755, true);
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        foreach ($iterator as $item) {
-            $target = $dest.DIRECTORY_SEPARATOR.$iterator->getSubPathname();
-            if ($item->isDir()) {
-                if (! is_dir($target)) {
-                    mkdir($target, 0755, true);
-                }
-            } else {
-                copy($item->getPathname(), $target);
-            }
-        }
-    }
-
-    private function deleteDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                rmdir($item->getPathname());
-            } else {
-                unlink($item->getPathname());
-            }
-        }
-
-        rmdir($dir);
     }
 }

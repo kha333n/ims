@@ -38,6 +38,17 @@ return [
             'report' => false,
         ],
 
+        // Persistent storage in AppData — survives uninstall/reinstall
+        'persistent' => [
+            'driver' => 'local',
+            'root' => (PHP_OS_FAMILY === 'Windows'
+                ? (getenv('APPDATA') ?: getenv('USERPROFILE').'\\AppData\\Roaming').'\\IMS\\storage'
+                : (getenv('HOME') ?: '/tmp').'/.ims/storage'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

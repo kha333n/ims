@@ -100,7 +100,7 @@ class ProductList extends Component
 
         $imagePath = $this->existing_image;
         if ($this->image) {
-            $imagePath = $this->image->store('product-images', 'local');
+            $imagePath = $this->image->store('product-images', 'persistent');
         }
 
         $data = [

@@ -290,7 +290,7 @@ class BackupService
     private function collectStorageFiles(): array
     {
         $files = [];
-        $storageDir = storage_path('app');
+        $storageDir = config('filesystems.disks.persistent.root');
         $scanDirs = ['product-images']; // Add more dirs as needed
 
         foreach ($scanDirs as $subDir) {
