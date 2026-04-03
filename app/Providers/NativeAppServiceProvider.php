@@ -26,7 +26,16 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function phpIni(): array
     {
-        return [
-        ];
+        // Load IMS security extension in production builds only.
+        // The DLL is NTS and only compatible with NativePHP's bundled PHP.
+        $extPath = dirname(PHP_BINARY) . DIRECTORY_SEPARATOR . 'ext' . DIRECTORY_SEPARATOR . 'php_ims.dll';
+
+        if (file_exists($extPath)) {
+            return [
+                'extension' => $extPath,
+            ];
+        }
+
+        return [];
     }
 }

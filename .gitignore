@@ -29,3 +29,9 @@ build/yakpro-po/composer.lock
 build/.build-staging/
 build/signing.pfx
 dist/
+
+# Extension build
+build/extension/out/
+# Note: build/extension/src/integrity_hashes.h is a placeholder in source.
+# The real file is generated at build time and overwrites it in dist/.
+build/keys/server_private.pem
